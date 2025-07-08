@@ -80,19 +80,21 @@ export async function POST(req: NextRequest) {
       requestBody: { values },
     });
 
-    // Also append to orders.json
-    let orders: any[] = [];
-    if (fs.existsSync(ORDERS_JSON_PATH)) {
-      const raw = fs.readFileSync(ORDERS_JSON_PATH, 'utf-8');
-      try {
-        orders = JSON.parse(raw);
-        if (!Array.isArray(orders)) orders = [];
-      } catch {
-        orders = [];
+    // Also append to orders.json (only in development)
+    if (process.env.NODE_ENV === "development") {
+      let orders: any[] = [];
+      if (fs.existsSync(ORDERS_JSON_PATH)) {
+        const raw = fs.readFileSync(ORDERS_JSON_PATH, "utf-8");
+        try {
+          orders = JSON.parse(raw);
+          if (!Array.isArray(orders)) orders = [];
+        } catch {
+          orders = [];
+        }
       }
+      orders.push({ ...order, orderId });
+      fs.writeFileSync(ORDERS_JSON_PATH, JSON.stringify(orders, null, 2));
     }
-    orders.push({ ...order, orderId });
-    fs.writeFileSync(ORDERS_JSON_PATH, JSON.stringify(orders, null, 2));
 
     return NextResponse.json({ success: true, orderId });
   } catch (error) {

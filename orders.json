@@ -62,5 +62,37 @@
       "specialInstructions": "bf"
     },
     "orderId": "ORD-250708-002"
+  },
+  {
+    "customer": {
+      "fullName": "aadesh",
+      "phone": "7218377887",
+      "whatsapp": "7",
+      "email": "aadeshbhujbal1@gmail.com",
+      "address": "wertyuknm,",
+      "pinCode": "123456",
+      "preferredCommunication": "whatsapp"
+    },
+    "order": {
+      "orderType": "kurti_kameez",
+      "quantity": 1,
+      "fabricDetails": "12321321",
+      "urgency": "regular"
+    },
+    "measurement": {
+      "measurementMethod": "provide_measurements",
+      "designReference": [
+        {}
+      ],
+      "designDescription": "asdsadas"
+    },
+    "delivery": {
+      "deliveryDate": "2025-07-11T18:30:00.000Z",
+      "deliveryMethod": "pickup",
+      "budgetAmount": "34545",
+      "payment": "cod",
+      "specialInstructions": "dgfd"
+    },
+    "orderId": "ORD-250708-001"
   }
 ]

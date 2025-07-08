@@ -3,9 +3,8 @@ import { google } from 'googleapis';
 import path from 'path';
 import fs from 'fs';
 
-const SHEET_ID = '1Atojz1POy5FQRQrJGuw7tyqRoAN3Hk9Se53PkMGI3Zg';
-const SERVICE_ACCOUNT_PATH = path.resolve(process.cwd(), 'google-service-account.json');
-const ORDERS_JSON_PATH = path.resolve(process.cwd(), 'orders.json');
+const SHEET_ID = process.env.GOOGLE_SHEET_ID!;
+const ORDERS_JSON_PATH = process.env.ORDERS_JSON_PATH || path.resolve(process.cwd(), 'orders.json');
 
 // In-memory order sequence tracking (resets on server restart)
 const orderSequence: { [date: string]: number } = {};
@@ -46,7 +45,7 @@ export async function POST(req: NextRequest) {
   try {
     const order = await req.json();
     const orderId = getTodayOrderId();
-    const credentials = JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, 'utf-8'));
+    const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON!);
     const auth = new google.auth.GoogleAuth({
       credentials,
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],

@@ -1,0 +1,66 @@
+[
+  {
+    "customer": {
+      "fullName": "AAdesh ",
+      "phone": "7972656777",
+      "whatsapp": "7972656777",
+      "email": "aadeshbhujbal1@gmail.com",
+      "address": "AAsdsadkbkjkjb",
+      "pinCode": "456562",
+      "preferredCommunication": "whatsapp"
+    },
+    "order": {
+      "orderType": "kurti_kameez",
+      "quantity": 1,
+      "fabricDetails": "yfdhghg ",
+      "urgency": "regular"
+    },
+    "measurement": {
+      "measurementMethod": "send_sample",
+      "designReference": [
+        {}
+      ],
+      "designDescription": "asdsdads"
+    },
+    "delivery": {
+      "deliveryDate": "2025-07-17T18:30:00.000Z",
+      "deliveryMethod": "courier",
+      "budgetAmount": "2333",
+      "payment": "cod",
+      "specialInstructions": "asd"
+    },
+    "orderId": "ORD-250708-001"
+  },
+  {
+    "customer": {
+      "fullName": "sdsadsad",
+      "phone": "7623636221",
+      "whatsapp": "123213",
+      "email": "aadeshbhujbal1@gmail.com",
+      "address": "sdfghjertydfg",
+      "pinCode": "123678",
+      "preferredCommunication": "phone"
+    },
+    "order": {
+      "orderType": "lehenga",
+      "quantity": 1,
+      "fabricDetails": "qwertyu",
+      "urgency": "regular"
+    },
+    "measurement": {
+      "measurementMethod": "provide_measurements",
+      "designReference": [
+        {}
+      ],
+      "designDescription": "sdfghjk"
+    },
+    "delivery": {
+      "deliveryDate": "2025-07-11T18:30:00.000Z",
+      "deliveryMethod": "home",
+      "budgetAmount": "3577",
+      "payment": "cod",
+      "specialInstructions": "bf"
+    },
+    "orderId": "ORD-250708-002"
+  }
+]

@@ -16,6 +16,7 @@ import { format, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
+import { CanvasPaint } from "@/components/CanvasPaint";
 
 const phoneRegex = /^((\+91)?|91)?[6-9][0-9]{9}$/;
 const pinCodeRegex = /^[1-9][0-9]{5}$/;
@@ -68,6 +69,8 @@ const measurementSchema = z.object({
       { message: "Max 5 files. Only JPG, PNG, PDF. Max 5MB each." }
     ),
   designDescription: z.string().min(2, "Design description required"),
+  canvasImage: z.string().optional(), // base64 PNG
+  canvasJson: z.string().optional(),  // fabric.js JSON
 });
 
 const deliverySchema = z.object({
@@ -153,6 +156,8 @@ export default function OrderFormPage() {
       measurementMethod: undefined,
       designReference: undefined,
       designDescription: "",
+      canvasImage: undefined,
+      canvasJson: undefined,
     },
   });
 
@@ -584,6 +589,29 @@ export default function OrderFormPage() {
                     </FormItem>
                   )}
                 />
+                {/* Canvas Paint Section */}
+                <div>
+                  <label className="block font-medium mb-2">Draw/Annotate Design (optional)</label>
+                  <CanvasPaint
+                    onSave={(data) => {
+                      measurementForm.setValue("canvasImage", data.image);
+                      measurementForm.setValue("canvasJson", data.json);
+                    }}
+                    initialData={measurementForm.watch("canvasJson")}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">You can draw or annotate your design here. Click Save to attach it to your order.</p>
+                </div>
+                {measurementForm.watch("canvasImage") && (
+                  <div className="mt-2">
+                    <label className="block text-xs text-gray-500 mb-1">Saved Drawing Preview:</label>
+                    <img
+                      src={measurementForm.watch("canvasImage")}
+                      alt="Canvas Drawing Preview"
+                      className="border rounded shadow max-w-full h-auto"
+                      style={{ maxHeight: 200 }}
+                    />
+                  </div>
+                )}
                 <CardFooter className="flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between pt-4">
                   <Button type="button" variant="secondary" onClick={() => setStep(2)} className="w-full sm:w-auto px-6 py-2 rounded-lg font-semibold">
                     Back
@@ -744,8 +772,108 @@ export default function OrderFormPage() {
                   <Button type="button" variant="secondary" onClick={() => setStep(3)} className="w-full sm:w-auto px-6 py-2 rounded-lg font-semibold">
                     Back
                   </Button>
-                  <Button type="submit" disabled={!deliveryForm.formState.isValid || submitLoading} className="w-full sm:w-auto px-6 py-2 rounded-lg font-semibold shadow-md">
-                    {submitLoading ? "Submitting..." : "Submit"}
+                  <Button type="button" disabled={!deliveryForm.formState.isValid} onClick={() => setStep(5)} className="w-full sm:w-auto px-6 py-2 rounded-lg font-semibold shadow-md">
+                    Next
+                  </Button>
+                </CardFooter>
+                {submitSuccess && (
+                  <div className="text-green-700 font-bold text-center mt-4 text-lg flex flex-col items-center gap-2">
+                    <span>{submitSuccess}</span>
+                    {orderId && (
+                      <span className="bg-green-100 text-green-800 px-4 py-2 rounded-lg border border-green-300 mt-2">
+                        Your Order ID: <span className="font-mono font-bold">{orderId}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
+                {submitError && <div className="text-red-600 font-semibold text-center mt-4">{submitError}</div>}
+              </form>
+            </Form>
+          )}
+          {step === 5 && (
+            <Form {...deliveryForm}>
+              <form onSubmit={deliveryForm.handleSubmit(handleDeliverySubmit)} className="space-y-5">
+                <div className="space-y-6 p-4">
+                  <h2 className="text-xl font-bold mb-4">Review Your Order</h2>
+                  <div className="space-y-4">
+                    {/* Customer Info */}
+                    <div>
+                      <h3 className="font-semibold text-lg mb-1">Customer Information</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+                        <div><span className="font-medium">Full Name:</span> {customerData?.fullName}</div>
+                        <div><span className="font-medium">Phone:</span> {customerData?.phone}</div>
+                        <div><span className="font-medium">WhatsApp:</span> {customerData?.whatsapp || <span className="text-gray-400">(not provided)</span>}</div>
+                        <div><span className="font-medium">Email:</span> {customerData?.email}</div>
+                        <div className="sm:col-span-2"><span className="font-medium">Address:</span> {customerData?.address}</div>
+                        <div><span className="font-medium">Pin Code:</span> {customerData?.pinCode}</div>
+                        <div><span className="font-medium">Preferred Communication:</span> {customerData?.preferredCommunication}</div>
+                      </div>
+                    </div>
+                    {/* Order Details */}
+                    <div>
+                      <h3 className="font-semibold text-lg mb-1">Order Details</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+                        <div><span className="font-medium">Order Type:</span> {orderForm.getValues().orderType}</div>
+                        <div><span className="font-medium">Quantity:</span> {orderForm.getValues().quantity}</div>
+                        <div className="sm:col-span-2"><span className="font-medium">Fabric Details:</span> {orderForm.getValues().fabricDetails}</div>
+                        <div><span className="font-medium">Urgency:</span> {orderForm.getValues().urgency}</div>
+                      </div>
+                    </div>
+                    {/* Measurements & Design */}
+                    <div>
+                      <h3 className="font-semibold text-lg mb-1">Measurements & Design</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+                        <div><span className="font-medium">Measurement Method:</span> {measurementForm.getValues().measurementMethod}</div>
+                        <div className="sm:col-span-2"><span className="font-medium">Design Description:</span> {measurementForm.getValues().designDescription}</div>
+                      </div>
+                      {measurementForm.getValues().designReference && Array.isArray(measurementForm.getValues().designReference) && measurementForm.getValues().designReference.length > 0 && (
+                        <div className="mt-2">
+                          <div className="font-medium mb-1">Design Reference Files:</div>
+                          <div className="flex flex-wrap gap-4">
+                            {measurementForm.getValues().designReference.map((file: any, idx: number) => (
+                              <div key={idx} className="flex flex-col items-center">
+                                {file.type && file.type.startsWith("image/") ? (
+                                  <img src={URL.createObjectURL(file)} alt={file.name} className="h-20 w-20 object-cover rounded border" />
+                                ) : (
+                                  <span className="inline-block h-20 w-20 bg-gray-200 rounded flex items-center justify-center border">PDF</span>
+                                )}
+                                <span className="text-xs mt-1">{file.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {measurementForm.getValues().canvasImage && (
+                        <div className="mt-2">
+                          <div className="font-medium mb-1">Canvas Drawing:</div>
+                          <img
+                            src={measurementForm.getValues().canvasImage}
+                            alt="Canvas Drawing Preview"
+                            className="border rounded shadow max-w-full h-auto"
+                            style={{ maxHeight: 180 }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {/* Delivery & Payment */}
+                    <div>
+                      <h3 className="font-semibold text-lg mb-1">Delivery & Payment</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+                        <div><span className="font-medium">Delivery Date:</span> {deliveryForm.getValues().deliveryDate?.toLocaleDateString?.() || String(deliveryForm.getValues().deliveryDate)}</div>
+                        <div><span className="font-medium">Delivery Method:</span> {deliveryForm.getValues().deliveryMethod}</div>
+                        <div><span className="font-medium">Budget Amount:</span> ₹{deliveryForm.getValues().budgetAmount}</div>
+                        <div><span className="font-medium">Payment:</span> {deliveryForm.getValues().payment}</div>
+                        <div className="sm:col-span-2"><span className="font-medium">Special Instructions:</span> {deliveryForm.getValues().specialInstructions || <span className="text-gray-400">(none)</span>}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <CardFooter className="flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between pt-4">
+                  <Button type="button" variant="secondary" onClick={() => setStep(4)} className="w-full sm:w-auto px-6 py-2 rounded-lg font-semibold">
+                    Back
+                  </Button>
+                  <Button type="submit" className="w-full sm:w-auto px-6 py-2 rounded-lg font-semibold shadow-md">
+                    Confirm & Submit
                   </Button>
                 </CardFooter>
                 {submitSuccess && (

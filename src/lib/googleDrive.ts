@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { Readable } from "stream";
 
 const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
 const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON!);
@@ -14,12 +15,13 @@ export async function uploadToDrive(file: { buffer: Buffer, originalname: string
     requestBody: {
       name: file.originalname,
       parents: [folderId],
+      mimeType: file.mimetype,
     },
     media: {
       mimeType: file.mimetype,
-      body: Buffer.from(file.buffer),
+      body: Readable.from(file.buffer), // Convert Buffer to ReadableStream
     },
-    fields: "id,webViewLink,webContentLink",
+    fields: 'id, webViewLink, webContentLink',
   });
   return res.data;
 }

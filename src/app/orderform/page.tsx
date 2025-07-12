@@ -261,8 +261,8 @@ export default function OrderFormPage() {
             .highlight { 
               background: #fff3cd; 
               border: 1px solid #ffeaa7; 
-              border-radius: 4px; 
-              padding: 8px; 
+            border-radius: 4px; 
+            padding: 8px; 
               margin-top: 8px;
               font-size: 10px;
             }
@@ -345,10 +345,7 @@ export default function OrderFormPage() {
     printWindow.onload = () => {
       printWindow.focus();
       printWindow.print();
-      // Close the window after printing
-      setTimeout(() => {
-        printWindow.close();
-      }, 1000);
+      // Do not auto-close; let the user close the window after printing
     };
 
     // Fallback if onload doesn't fire
@@ -532,9 +529,7 @@ export default function OrderFormPage() {
     printWindow.onload = () => {
       printWindow.focus();
       printWindow.print();
-      setTimeout(() => {
-        printWindow.close();
-      }, 1000);
+      // Do not auto-close; let the user close the window after printing
     };
     setTimeout(() => {
       if (!printWindow.closed) {
@@ -867,10 +862,7 @@ export default function OrderFormPage() {
     printWindow.onload = () => {
       printWindow.focus();
       printWindow.print();
-      // Close the window after printing
-      setTimeout(() => {
-        printWindow.close();
-      }, 1000);
+      // Do not auto-close; let the user close the window after printing
     };
 
     // Fallback if onload doesn't fire
@@ -2719,9 +2711,30 @@ export default function OrderFormPage() {
                     <button
                       type="button"
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-700 transition-colors flex items-center justify-center text-sm"
-                      onClick={() => {
-                        console.log("Customer Copy button clicked");
-                        printCustomerCopy();
+                      onClick={async () => {
+                        if (submittedOrder?.oid) {
+                          const response = await fetch(
+                            `/api/proxy-pdf?type=customer&oid=${submittedOrder.oid}`
+                          );
+                          if (!response.ok) {
+                            alert("Invoice not available yet.");
+                            return;
+                          }
+                          const blob = await response.blob();
+                          const blobUrl = URL.createObjectURL(blob);
+                          const printWindow = window.open(blobUrl, "_blank");
+                          if (printWindow) {
+                            printWindow.onload = () => {
+                              printWindow.focus();
+                              printWindow.print();
+                              // Do not auto-close; let the user close the window after printing
+                            };
+                          } else {
+                            alert("Please allow popups to print the invoice.");
+                          }
+                        } else {
+                          alert("Invoice not available yet.");
+                        }
                       }}
                     >
                       <svg
@@ -2742,9 +2755,30 @@ export default function OrderFormPage() {
                     <button
                       type="button"
                       className="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold shadow hover:bg-purple-700 transition-colors flex items-center justify-center text-sm"
-                      onClick={() => {
-                        console.log("Tailor Copy button clicked");
-                        printTailorCopy();
+                      onClick={async () => {
+                        if (submittedOrder?.oid) {
+                          const response = await fetch(
+                            `/api/proxy-pdf?type=tailor&oid=${submittedOrder.oid}`
+                          );
+                          if (!response.ok) {
+                            alert("Invoice not available yet.");
+                            return;
+                          }
+                          const blob = await response.blob();
+                          const blobUrl = URL.createObjectURL(blob);
+                          const printWindow = window.open(blobUrl, "_blank");
+                          if (printWindow) {
+                            printWindow.onload = () => {
+                              printWindow.focus();
+                              printWindow.print();
+                              // Do not auto-close; let the user close the window after printing
+                            };
+                          } else {
+                            alert("Please allow popups to print the invoice.");
+                          }
+                        } else {
+                          alert("Invoice not available yet.");
+                        }
                       }}
                     >
                       <svg
@@ -2765,9 +2799,30 @@ export default function OrderFormPage() {
                     <button
                       type="button"
                       className="px-4 py-2 bg-orange-600 text-white rounded-lg font-semibold shadow hover:bg-orange-700 transition-colors flex items-center justify-center text-sm"
-                      onClick={() => {
-                        console.log("Admin Copy button clicked");
-                        printAdminCopy();
+                      onClick={async () => {
+                        if (submittedOrder?.oid) {
+                          const response = await fetch(
+                            `/api/proxy-pdf?type=admin&oid=${submittedOrder.oid}`
+                          );
+                          if (!response.ok) {
+                            alert("Invoice not available yet.");
+                            return;
+                          }
+                          const blob = await response.blob();
+                          const blobUrl = URL.createObjectURL(blob);
+                          const printWindow = window.open(blobUrl, "_blank");
+                          if (printWindow) {
+                            printWindow.onload = () => {
+                              printWindow.focus();
+                              printWindow.print();
+                              // Do not auto-close; let the user close the window after printing
+                            };
+                          } else {
+                            alert("Please allow popups to print the invoice.");
+                          }
+                        } else {
+                          alert("Invoice not available yet.");
+                        }
                       }}
                     >
                       <svg
@@ -2780,7 +2835,7 @@ export default function OrderFormPage() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                         />
                       </svg>
                       Admin Copy

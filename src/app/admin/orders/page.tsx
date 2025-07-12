@@ -8,6 +8,16 @@ type FileData = {
   originalname: string | { filename?: string };
 };
 
+type Design = {
+  name?: string;
+  amount?: number | string;
+  designDescription?: string;
+  canvasImage?: string;
+  designReferenceFiles?: FileData[];
+  designReference?: (FileData | string)[];
+  // Add any other fields you use in the UI
+};
+
 type Measurement = {
   designDescription?: string;
   measurements?: Record<string, string | number>;
@@ -17,13 +27,15 @@ type Measurement = {
 };
 
 type Garment = {
-  gender?: string;
+  variant?: string;
   order?: {
     orderType?: string;
     urgency?: string;
     quantity?: number;
   };
   measurement?: Measurement;
+  category?: string; // Added category to Garment type
+  designs?: Design[]; // <-- Added designs property
 };
 
 type Order = {
@@ -36,7 +48,7 @@ type Order = {
   fullAddress?: string;
   deliveryDate?: string;
   deliveryMethod?: string;
-  budgetAmount?: string;
+  totalAmount?: string;
   payment?: string;
   specialInstructions?: string;
   createdAt?: string;
@@ -333,7 +345,7 @@ function OrderCard({
           <div className="flex items-center space-x-2">
             <div className="text-right">
               <div className="text-sm font-medium text-gray-900">
-                {order.budgetAmount}
+                ₹{order.totalAmount}
               </div>
               <div className="text-xs text-gray-500">{order.payment}</div>
             </div>
@@ -378,7 +390,7 @@ function OrderCard({
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-blue-900">
-                    {order.budgetAmount}
+                    ₹{order.totalAmount}
                   </div>
                   <div className="text-sm text-blue-700">{order.payment}</div>
                 </div>
@@ -439,7 +451,7 @@ function OrderCard({
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Budget:</span>
                     <span className="text-sm font-medium text-green-600">
-                      {order.budgetAmount}
+                      ₹{order.totalAmount}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -484,17 +496,20 @@ function OrderCard({
                         </div>
                         <div>
                           <h5 className="font-medium text-gray-900">
-                            {g.order?.orderType || "Garment"}
+                            {/* Show category if available, else fallback to orderType or 'Garment' */}
+                            {g.category || g.order?.orderType || "Garment"}
                           </h5>
-                          <p className="text-sm text-gray-500">
-                            Quantity: {g.order?.quantity || 1} • Urgency:{" "}
-                            {g.order?.urgency || "Normal"}
+                          <p className="text-xs text-gray-500">
+                            {g.variant && (
+                              <span>Variant: {g.variant} • </span>
+                            )}
+                            Quantity: {g.order?.quantity || 1} • Urgency: {g.order?.urgency || "Normal"}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          {g.gender || "Unspecified"}
+                          {g.variant || "Standard"}
                         </span>
                       </div>
                     </div>
@@ -604,12 +619,78 @@ function OrderCard({
                                   <div className="text-sm font-semibold text-gray-900">
                                     {String(value)}
                                   </div>
+                                  
                                 </div>
                               )
                             )}
                           </div>
                         </div>
                       )}
+                    {/* Designs Section */}
+                    {g.designs && Array.isArray(g.designs) && g.designs.length > 0 && (
+                      <div className="mt-4">
+                        <h6 className="text-sm font-medium text-purple-700 mb-2">Designs</h6>
+                        <div className="space-y-4">
+                          {g.designs.map((design: any, dIdx: number) => (
+                            <div key={dIdx} className="bg-white border border-purple-100 rounded-lg p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-semibold text-purple-900">{design.name || `Design ${dIdx + 1}`}</span>
+                                <span className="text-green-700 font-bold">₹{design.amount}</span>
+                              </div>
+                              {design.designDescription && (
+                                <div className="mb-2 text-gray-700 text-sm">{design.designDescription}</div>
+                              )}
+                              {/* Canvas Drawing */}
+                              {design.canvasImage && (
+                                <div className="mb-2">
+                                  <div className="text-xs text-gray-500 mb-1">Canvas Drawing:</div>
+                                  <img
+                                    src={design.canvasImage}
+                                    alt="Canvas Drawing"
+                                    className="w-full max-w-xs h-auto border rounded shadow-sm"
+                                    style={{ maxHeight: 120 }}
+                                    onClick={() => onImageClick(design.canvasImage, 'Canvas Drawing')}
+                                  />
+                                </div>
+                              )}
+                              {/* Reference Images */}
+                              {(design.designReferenceFiles && Array.isArray(design.designReferenceFiles) && design.designReferenceFiles.length > 0
+                                ? design.designReferenceFiles
+                                : (design.designReference && Array.isArray(design.designReference) ? design.designReference : [])
+                              ).length > 0 && (
+                                <div className="mb-2">
+                                  <div className="text-xs text-gray-500 mb-1">Reference Images:</div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {(design.designReferenceFiles && design.designReferenceFiles.length > 0
+                                      ? design.designReferenceFiles
+                                      : design.designReference
+                                    ).map((file: any, imgIdx: number) => {
+                                      let src = "";
+                                      if (typeof file === "string") {
+                                        src = file;
+                                      } else if (file instanceof File) {
+                                        src = URL.createObjectURL(file);
+                                      } else if (file?.url) {
+                                        src = file.url;
+                                      }
+                                      return src ? (
+                                        <img
+                                          key={imgIdx}
+                                          src={src}
+                                          alt={`Reference ${imgIdx + 1}`}
+                                          className="w-20 h-20 object-cover border rounded cursor-pointer"
+                                          onClick={() => onImageClick(src, `Reference ${imgIdx + 1}`)}
+                                        />
+                                      ) : null;
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

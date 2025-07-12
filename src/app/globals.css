@@ -120,3 +120,97 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Print Styles */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Ensure all SVG icons display in print */
+  svg {
+    display: inline-block !important;
+    visibility: visible !important;
+    fill: currentColor !important;
+    stroke: currentColor !important;
+  }
+  
+  /* Ensure colors print properly */
+  .bg-green-50, .bg-blue-50, .bg-purple-50, .bg-orange-50 {
+    background-color: #f0fdf4 !important;
+  }
+  
+  .bg-green-100, .bg-blue-100, .bg-purple-100, .bg-orange-100 {
+    background-color: #dcfce7 !important;
+  }
+  
+  .border-green-200, .border-blue-200, .border-purple-200, .border-orange-200 {
+    border-color: #bbf7d0 !important;
+  }
+  
+  .text-green-600, .text-blue-600, .text-purple-600, .text-orange-600 {
+    color: #16a34a !important;
+  }
+  
+  .text-green-700, .text-blue-700, .text-purple-700, .text-orange-700 {
+    color: #15803d !important;
+  }
+  
+  .text-green-800, .text-blue-800, .text-purple-800, .text-orange-800 {
+    color: #166534 !important;
+  }
+  
+  .text-green-900, .text-blue-900, .text-purple-900, .text-orange-900 {
+    color: #14532d !important;
+  }
+  
+  /* Ensure table borders print */
+  table, th, td {
+    border: 1px solid #d1d5db !important;
+  }
+  
+  /* Page breaks */
+  .print\:break-after-page {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+  
+  /* Hide elements in print */
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  /* Print-specific styling */
+  .print\:bg-white {
+    background-color: white !important;
+  }
+  
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+  
+  .print\:max-w-full {
+    max-width: 100% !important;
+  }
+  
+  .print\:p-0 {
+    padding: 0 !important;
+  }
+  
+  /* Page margins for print */
+  @page {
+    margin: 1in;
+    size: A4;
+  }
+  
+  /* Ensure proper spacing in print */
+  .print\:space-y-4 > * + * {
+    margin-top: 1rem !important;
+  }
+  
+  .print\:space-y-6 > * + * {
+    margin-top: 1.5rem !important;
+  }
+}

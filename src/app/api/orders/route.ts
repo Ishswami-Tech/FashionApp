@@ -184,29 +184,32 @@ export async function POST(req: NextRequest) {
         measurement.canvasImageFile = undefined;
       }
       // Upload designReference files to Cloudinary if present
-      const designRefs = [];
-      let j = 0;
-      while (files[`designReference_${i}_${j}`]) {
-        const file = files[`designReference_${i}_${j}`];
-        console.log(`Uploading designReference for garment ${i}, ref ${j}:`, file);
-        if (!file.mimetype) file.mimetype = 'image/png';
-        const imageNum = j + 1;
-        const businessName = `ORD+${garmentType}+${orderSeq}+${garmentIndex}+REF+${imageNum}`;
-        const folder = `orders/${dateFolder}/${oid}`;
-        const result = await new Promise((resolve, reject) => {
-          cloudinary.uploader.upload_stream(
-            { resource_type: 'image', public_id: businessName.replace(/\+/g, '_'), folder },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          ).end(file.buffer);
-        });
-        console.log('Cloudinary designReference upload result:', result);
-        designRefs.push({ url: result.secure_url, originalname: businessName });
-        j++;
+      // If this garment has designs, attach designReferenceFiles to each design
+      if (Array.isArray(garment.designs)) {
+        for (let d = 0; d < garment.designs.length; d++) {
+          const designRefs = [];
+          let j = 0;
+          while (files[`designReference_${i}_${d}_${j}`]) {
+            const file = files[`designReference_${i}_${d}_${j}`];
+            if (!file.mimetype) file.mimetype = 'image/png';
+            const imageNum = j + 1;
+            const businessName = `ORD+${garmentType}+${orderSeq}+${garmentIndex}+REF+${d + 1}+${imageNum}`;
+            const folder = `orders/${dateFolder}/${oid}`;
+            const result = await new Promise((resolve, reject) => {
+              cloudinary.uploader.upload_stream(
+                { resource_type: 'image', public_id: businessName.replace(/\+/g, '_'), folder },
+                (error, result) => {
+                  if (error) reject(error);
+                  else resolve(result);
+                }
+              ).end(file.buffer);
+            });
+            designRefs.push({ url: result.secure_url, originalname: businessName });
+            j++;
+          }
+          garment.designs[d].designReferenceFiles = designRefs;
+        }
       }
-      measurement.designReferenceFiles = designRefs;
       // Voice notes: (optional) you can upload to Cloudinary as resource_type: 'video' or keep in MongoDB
       if (files[`voiceNote_${i}`]) {
         const file = files[`voiceNote_${i}`];
@@ -220,10 +223,20 @@ export async function POST(req: NextRequest) {
 
     // 4. Build the order object
     // Only store order data (no image buffers)
+    // Calculate total amount from all designs
+    const totalAmount = garments.reduce((sum: number, garment: any) => {
+      if (garment.designs && Array.isArray(garment.designs)) {
+        return sum + garment.designs.reduce((dsum: number, design: any) => 
+          dsum + (parseFloat(design.amount) || 0), 0);
+      }
+      return sum;
+    }, 0);
+    
     const order = {
       ...customer,
       ...delivery,
       garments,
+      totalAmount: totalAmount.toFixed(2),
       oid,
       orderDate: formattedDate,
       createdAt: now,
@@ -233,9 +246,13 @@ export async function POST(req: NextRequest) {
     // 5. Store in MongoDB
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "fashionapp");
-    await db.collection("orders").insertOne(order);
+    const insertResult = await db.collection("orders").insertOne(order);
 
-    return NextResponse.json({ success: true, oid, orderDate: formattedDate });
+    // Fetch the inserted order (with _id)
+    const savedOrder = await db.collection("orders").findOne({ _id: insertResult.insertedId });
+
+    console.log('Returning response:', { success: true, oid, orderDate: formattedDate, order: savedOrder });
+    return NextResponse.json({ success: true, oid, orderDate: formattedDate, order: savedOrder });
   } catch (error) {
     console.error("Order API error:", error);
     return NextResponse.json({ success: false, error: error?.toString() }, { status: 500 });

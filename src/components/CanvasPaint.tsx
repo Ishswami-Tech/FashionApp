@@ -1,33 +1,100 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 // Dynamic import for fabric.js to support ESM/CJS and Next.js SSR
+
+// Add toolbar CSS (can be moved to a CSS file if desired)
+const toolbarStyles = `
+.canvas-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin-bottom: 0.75em;
+  justify-content: center;
+}
+.canvas-toolbar-btn {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  color: #222;
+  border-radius: 6px;
+  padding: 0.4em 1em;
+  font-weight: 500;
+  margin: 0 0.1em;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+  cursor: pointer;
+  outline: none;
+}
+.canvas-toolbar-btn.active,
+.canvas-toolbar-btn:focus {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
+.canvas-toolbar-btn.eraser {
+  background: #fff7ed;
+  color: #d97706;
+  border-color: #fbbf24;
+}
+.canvas-toolbar-btn.pen {
+  background: #e0f2fe;
+  color: #2563eb;
+  border-color: #38bdf8;
+}
+`;
 
 interface CanvasPaintProps {
   onSave: (data: { image: string; json: string }) => void;
   initialData?: string;
 }
 
-const CANVAS_WIDTH = 600;
+const MAX_CANVAS_WIDTH = 600;
 const CANVAS_HEIGHT = 400;
 
-export const CanvasPaint: React.FC<CanvasPaintProps> = ({ onSave, initialData }) => {
+export const CanvasPaint: React.FC<CanvasPaintProps> = ({
+  onSave,
+  initialData,
+}) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const fabricRef = useRef<any>(null);
   const [brushColor, setBrushColor] = useState("#222");
   const [brushSize, setBrushSize] = useState(3);
+  const [canvasWidth, setCanvasWidth] = useState(MAX_CANVAS_WIDTH);
+  // Track tool: 'pen', 'eraser', 'draw', 'select'
+  const [activeTool, setActiveTool] = useState<
+    "pen" | "eraser" | "draw" | "select"
+  >("pen");
+
+  // Responsive: set canvas width to container width (max 600px)
+  useEffect(() => {
+    function updateWidth() {
+      if (containerRef.current) {
+        const width = Math.min(
+          containerRef.current.offsetWidth,
+          MAX_CANVAS_WIDTH
+        );
+        setCanvasWidth(width);
+      }
+    }
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
     let fabricCanvas: any = null;
 
     async function loadFabric() {
-      const mod = await import('fabric');
+      const mod = await import("fabric");
       const fabricNS = mod;
       if (!canvasRef.current || !isMounted) return;
       fabricCanvas = new fabricNS.Canvas(canvasRef.current, {
-        isDrawingMode: true,
-        width: CANVAS_WIDTH,
+        isDrawingMode:
+          activeTool === "draw" ||
+          activeTool === "pen" ||
+          activeTool === "eraser",
+        width: canvasWidth,
         height: CANVAS_HEIGHT,
-        backgroundColor: '#fff',
+        backgroundColor: "#fff",
       });
       fabricRef.current = fabricCanvas;
       // Set initial brush settings
@@ -40,7 +107,10 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({ onSave, initialData })
         fabricCanvas.freeDrawingBrush.width = brushSize;
       }
       if (initialData) {
-        fabricCanvas.loadFromJSON(initialData, fabricCanvas.renderAll.bind(fabricCanvas));
+        fabricCanvas.loadFromJSON(
+          initialData,
+          fabricCanvas.renderAll.bind(fabricCanvas)
+        );
       }
     }
 
@@ -52,25 +122,32 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({ onSave, initialData })
         fabricRef.current.dispose();
       }
     };
-  }, [initialData]);
+  }, [initialData, canvasWidth]);
 
-  // Update brush when color or size changes
+  // Update brush when color, size, or tool changes
   useEffect(() => {
     if (fabricRef.current) {
       if (fabricRef.current.freeDrawingBrush) {
         fabricRef.current.freeDrawingBrush.color = brushColor;
         fabricRef.current.freeDrawingBrush.width = brushSize;
       } else if (fabricRef.current.PencilBrush) {
-        fabricRef.current.freeDrawingBrush = new fabricRef.current.PencilBrush(fabricRef.current);
+        fabricRef.current.freeDrawingBrush = new fabricRef.current.PencilBrush(
+          fabricRef.current
+        );
         fabricRef.current.freeDrawingBrush.color = brushColor;
         fabricRef.current.freeDrawingBrush.width = brushSize;
       }
+      // Set drawing/select mode
+      fabricRef.current.isDrawingMode =
+        activeTool === "draw" ||
+        activeTool === "pen" ||
+        activeTool === "eraser";
     }
-  }, [brushColor, brushSize]);
+  }, [brushColor, brushSize, activeTool]);
 
   const handleSave = () => {
     if (!fabricRef.current) return;
-    const image = fabricRef.current.toDataURL({ format: 'png' });
+    const image = fabricRef.current.toDataURL({ format: "png" });
     const json = JSON.stringify(fabricRef.current.toJSON());
     onSave({ image, json });
   };
@@ -84,7 +161,7 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({ onSave, initialData })
   const clearCanvas = () => {
     if (fabricRef.current) {
       fabricRef.current.clear();
-      fabricRef.current.backgroundColor = '#fff';
+      fabricRef.current.backgroundColor = "#fff";
       fabricRef.current.renderAll();
     }
   };
@@ -92,13 +169,14 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({ onSave, initialData })
   // Toolbar UI
   return (
     <div className="w-full flex flex-col items-center">
-      <div className="flex gap-2 mb-2 items-center">
+      <style>{toolbarStyles}</style>
+      <div className="canvas-toolbar">
         <label className="flex items-center gap-1">
           Color:
           <input
             type="color"
             value={brushColor}
-            onChange={e => setBrushColor(e.target.value)}
+            onChange={(e) => setBrushColor(e.target.value)}
             className="ml-1 border rounded"
           />
         </label>
@@ -109,16 +187,18 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({ onSave, initialData })
             min={1}
             max={20}
             value={brushSize}
-            onChange={e => setBrushSize(Number(e.target.value))}
+            onChange={(e) => setBrushSize(Number(e.target.value))}
             className="ml-1"
           />
           <span className="w-6 text-xs">{brushSize}</span>
         </label>
         <button
           type="button"
-          className="btn"
+          className={`canvas-toolbar-btn eraser${
+            activeTool === "eraser" ? " active" : ""
+          }`}
           onClick={() => {
-            setDrawingMode(true);
+            setActiveTool("eraser");
             setBrushColor("#fff"); // Eraser (white)
           }}
         >
@@ -126,26 +206,63 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({ onSave, initialData })
         </button>
         <button
           type="button"
-          className="btn"
+          className={`canvas-toolbar-btn pen${
+            activeTool === "pen" ? " active" : ""
+          }`}
           onClick={() => {
-            setDrawingMode(true);
+            setActiveTool("pen");
             setBrushColor("#222"); // Default pen color
           }}
         >
           Pen
         </button>
+        <button
+          type="button"
+          className={`canvas-toolbar-btn${
+            activeTool === "draw" ? " active" : ""
+          }`}
+          onClick={() => setActiveTool("draw")}
+        >
+          Draw
+        </button>
+        <button
+          type="button"
+          className={`canvas-toolbar-btn${
+            activeTool === "select" ? " active" : ""
+          }`}
+          onClick={() => setActiveTool("select")}
+        >
+          Select
+        </button>
+        <button
+          type="button"
+          className="canvas-toolbar-btn"
+          onClick={handleSave}
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          className="canvas-toolbar-btn"
+          onClick={clearCanvas}
+        >
+          Clear
+        </button>
       </div>
-      <div className="border rounded shadow-lg overflow-auto" style={{ width: CANVAS_WIDTH, maxWidth: '100%' }}>
-        <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
-      </div>
-      <div className="flex gap-2 mt-2">
-        <button type="button" className="btn" onClick={handleSave}>Save</button>
-        <button type="button" className="btn" onClick={clearCanvas}>Clear</button>
-        <button type="button" className="btn" onClick={() => setDrawingMode(true)}>Draw</button>
-        <button type="button" className="btn" onClick={() => setDrawingMode(false)}>Select</button>
+      <div
+        ref={containerRef}
+        className="border rounded shadow-lg overflow-auto w-full"
+        style={{ maxWidth: MAX_CANVAS_WIDTH }}
+      >
+        <canvas
+          ref={canvasRef}
+          width={canvasWidth}
+          height={CANVAS_HEIGHT}
+          style={{ width: "100%", height: "auto", display: "block" }}
+        />
       </div>
     </div>
   );
 };
 
-export default CanvasPaint; 
+export default CanvasPaint;

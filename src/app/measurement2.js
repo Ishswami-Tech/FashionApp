@@ -1,227 +1,228 @@
 export default {
-    "measurement_new": [
-      {
-        "category": "Kurti",
-        "variants": [
-          {
-            "type": "Standard",
-            "measurements": [
-              { "key": "TuxPoint", "label": "Tux Point", "value": null },
-              { "key": "waistPoint", "label": "waist Point", "value": null },
-              { "key": "FullLength", "label": "Full Length", "value": null },
-              { "key": "Shoulder", "label": "Shoulder", "value": null },
-              { "key": "BackNeck", "label": "Back Neck", "value": null },
-              { "key": "FrontNeck", "label": "Front Neck", "value": null },
-              { "key": "Burst", "label": "Burst", "value": null },
-              { "key": "Waist", "label": "Waist", "value": null },
-              { "key": "Hip", "label": "Hip", "value": null },
-              { "key": "SideSlit", "label": "Side Slit", "value": null },
-              { "key": "Gear", "label": "Gear", "value": null },
-              { "key": "SleeveLength", "label": "Sleeve Length", "value": null },
-              { "key": "SleeveRound", "label": "Sleeve Round", "value": null },
-              { "key": "SleeveBicep", "label": "Sleeve Bicep", "value": null },
-              { "key": "SleeveArmhole", "label": "Sleeve Armhole", "value": null },
-              { "key": "Loosing", "label": "Loosing", "value": null }
-            ]
-          }
-        ]
-      },
-      {
-        "category": "KurtiSets",
-        "variants": [
-          "KurtiPant",
-          "KurtiPlazo",
-          "KurtiPatiyala",
-          "KurtiChudidar"
-        ].map(type => ({
-          "type": type,
-          "measurements": [
-            { "key": "TuxPoint", "label": "Tux Point", "value": null },
-            { "key": "waistPoint", "label": "waist Point", "value": null },
-            { "key": "FullLength", "label": "Full Length", "value": null },
-            { "key": "Shoulder", "label": "Shoulder", "value": null },
-            { "key": "BackNeck", "label": "Back Neck", "value": null },
-            { "key": "FrontNeck", "label": "Front Neck", "value": null },
-            { "key": "Burst", "label": "Burst", "value": null },
-            { "key": "Waist", "label": "Waist", "value": null },
-            { "key": "Hip", "label": "Hip", "value": null },
-            { "key": "SideSlit", "label": "Side Slit", "value": null },
-            { "key": "Gear", "label": "Gear", "value": null },
-            { "key": "SleeveLength", "label": "Sleeve Length", "value": null },
-            { "key": "SleeveRound", "label": "Sleeve Round", "value": null },
-            { "key": "SleeveBicep", "label": "Sleeve Bicep", "value": null },
-            { "key": "SleeveArmhole", "label": "Sleeve Armhole", "value": null },
-            { "key": "Bottom", "label": "Bottom", "value": null },
-            { "key": "KneeLength", "label": "Knee Length", "value": null },
-            { "key": "KneeRound", "label": "Knee Round", "value": null },
-            { "key": "ThighsLength", "label": "Thighs Length", "value": null },
-            { "key": "ThighsRound", "label": "Thighs Round", "value": null },
-            { "key": "Crotch", "label": "Crotch", "value": null },
-            { "key": "Loosing", "label": "Loosing", "value": null }
-          ]
-        }))
-      },
-      {
-        "category": "Blouses",
-        "variants": [
-          "Full Kotori", "Half Kotori", "Princess Cut", "Four Tucks"
-        ].map(type => ({
-          "type": type,
-          "measurements": [
-            { "key": "FullLength", "label": "Full Length", "value": "" },
-            { "key": "Shoulder", "label": "Shoulder", "value": "" },
-            { "key": "BackNeck", "label": "Back Neck", "value": "" },
-            { "key": "FrontNeck", "label": "Front Neck", "value": "" },
-            { "key": "UpperBust", "label": "Upper Bust", "value": "" },
-            { "key": "MiddleBust", "label": "Middle Bust", "value": "" },
-            { "key": "waistRound", "label": "waist Round", "value": "" },
-            { "key": "Tucks", "label": "Tucks", "value": "" },
-            { "key": "SleeveLength", "label": "Sleeve Length", "value": "" },
-            { "key": "SleeveRound", "label": "Sleeve Round", "value": "" },
-            { "key": "SleeveBicep", "label": "Sleeve Bicep", "value": "" },
-            { "key": "Armhole", "label": "Armhole", "value": "" },
-            { "key": "Loosing", "label": "Loosing", "value": "" }
-          ]
-        }))
-      },
-      {
-        "category": "Gharara Blouse",
-        "variants": [
-          "Fish Cut", "Circular", "Kaliwala","Pleated"
-        ].map(type => ({
-          "type": type,
-          "measurements": [
-            { "key": "FullLength", "label": "Full Length", "value": "" },
-            { "key": "WaistRound", "label": "Waist Round", "value": "" },
-            { "key": "HipRound", "label": "Hip Round", "value": "" },
-            { "key": "KneeLength", "label": "Knee Length", "value": "" },
-            { "key": "HipLength", "label": "Hip Length", "value": "" },
-            { "key": "Shoulder", "label": "Shoulder", "value": "" },
-            { "key": "BackNeck", "label": "Back Neck", "value": "" },
-            { "key": "FrontNeck", "label": "Front Neck", "value": "" },
-            { "key": "UpperBust", "label": "Upper Bust", "value": "" },
-            { "key": "MiddleBust", "label": "Middle Bust", "value": "" },
-            { "key": "waistRound", "label": "waist Round", "value": "" },
-            { "key": "Tucks", "label": "Tucks", "value": "" },
-            { "key": "SleeveLength", "label": "Sleeve Length", "value": "" },
-            { "key": "SleeveRound", "label": "Sleeve Round", "value": "" },
-            { "key": "SleeveBicep", "label": "Sleeve Bicep", "value": "" },
-            { "key": "Armhole", "label": "Armhole", "value": "" },
-            { "key": "Loosing", "label": "Loosing", "value": "" }
-          ]
-        }))
-      },
-      {
-        "category": "Long One Piece",
-        "variants": [
-          {
-            "type": "Standard",
-            "measurements": [
-              { "key": "FullLength", "label": "Full Length", "value": "" },
-              { "key": "Shoulder", "label": "Shoulder", "value": "" },
-              { "key": "BackNeck", "label": "Back Neck", "value": "" },
-              { "key": "FrontNeck", "label": "Front Neck", "value": "" },
-              { "key": "UpperBust", "label": "Upper Bust", "value": "" },
-              { "key": "LowerBust", "label": "Lower Bust", "value": "" },
-              { "key": "Waist", "label": "Waist", "value": "" },
-              { "key": "WaistLength", "label": "Waist Length", "value": "" },
-              { "key": "Hip", "label": "Hip", "value": "" },
-              { "key": "Gear", "label": "Gear", "value": "" },
-              { "key": "Loosing", "label": "Loosing", "value": "" }
-            ]
-          }
-        ]
-      },
-      {
-        "category": "Saree",
-        "variants": [
-          "Navwari Saree",
-          "6 Wari Saree",
-          "Ready to Wear Saree",
-          "Study Rajalakshmi Saadi",
-          "Brahmakshi Saadi",
-          "Sahi Mastani Sade",
-          "Peshwa Mastani Sade",
-          "Peshwa Brahmi Saadi",
-          "Kolhapuri Saadi",
-          "Kolapuri Mastani Sade",
-          "Jijau Saadi",
-          "Bramni Saadi",
-          "Shahi Makshani Saadi",
-          "Shahi Brahmani Saadi",
-          "Kolapuri Brahmi Saadi",
-          "Kulapuri Peshwai Brahni Saadi",
-          "Dev Sena Saadi"
+  measurement_new: [
+    {
+      category: "Kurti",
+      variants: [
+        {
+          type: "Standard",
+          measurements: [
+            { key: "TucksPoint", label: "Tucks Point", value: null },
+            { key: "waistPoint", label: "waist Point", value: null },
+            { key: "FullLength", label: "Full Length", value: null },
+            { key: "Shoulder", label: "Shoulder", value: null },
+            { key: "BackNeck", label: "Back Neck", value: null },
+            { key: "FrontNeck", label: "Front Neck", value: null },
+            { key: "Burst", label: "Burst", value: null },
+            { key: "Waist", label: "Waist", value: null },
+            { key: "Hip", label: "Hip", value: null },
+            { key: "SideSlit", label: "Side Slit", value: null },
+            { key: "Gear", label: "Gear", value: null },
+            { key: "SleeveLength", label: "Sleeve Length", value: null },
+            { key: "SleeveRound", label: "Sleeve Round", value: null },
+            { key: "SleeveBicep", label: "Sleeve Bicep", value: null },
+            { key: "SleeveArmhole", label: "Sleeve Armhole", value: null },
+            { key: "Loosing", label: "Loosing", value: null },
+          ],
+        },
+      ],
+    },
+    {
+      category: "KurtiSets",
+      variants: [
+        "KurtiPant",
+        "KurtiPlazo",
+        "KurtiPatiyala",
+        "KurtiChudidar",
+      ].map((type) => ({
+        type: type,
+        measurements: [
+          { key: "TucksPoint", label: "Tucks Point", value: null },
+          { key: "waistPoint", label: "waist Point", value: null },
+          { key: "FullLength", label: "Full Length", value: null },
+          { key: "Shoulder", label: "Shoulder", value: null },
+          { key: "BackNeck", label: "Back Neck", value: null },
+          { key: "FrontNeck", label: "Front Neck", value: null },
+          { key: "Burst", label: "Burst", value: null },
+          { key: "Waist", label: "Waist", value: null },
+          { key: "Hip", label: "Hip", value: null },
+          { key: "SideSlit", label: "Side Slit", value: null },
+          { key: "Gear", label: "Gear", value: null },
+          { key: "SleeveLength", label: "Sleeve Length", value: null },
+          { key: "SleeveRound", label: "Sleeve Round", value: null },
+          { key: "SleeveBicep", label: "Sleeve Bicep", value: null },
+          { key: "SleeveArmhole", label: "Sleeve Armhole", value: null },
+          { key: "Bottom", label: "Bottom", value: null },
+          { key: "KneeLength", label: "Knee Length", value: null },
+          { key: "KneeRound", label: "Knee Round", value: null },
+          { key: "ThighsLength", label: "Thighs Length", value: null },
+          { key: "ThighsRound", label: "Thighs Round", value: null },
+          { key: "Crotch", label: "Crotch", value: null },
+          { key: "Loosing", label: "Loosing", value: null },
         ],
-        "measurements": [
-          { "key": "FullLength", "label": "Full Length", "value": "" },
-          { "key": "Waist", "label": "Waist", "value": "" },
-          { "key": "Hip", "label": "Hip", "value": "" },
-          { "key": "ThighsLength", "label": "Thighs Length", "value": "" },
-          { "key": "ThighsRound", "label": "Thighs Round", "value": "" },
-          { "key": "KneeLength", "label": "Knee Length", "value": "" },
-          { "key": "KneeRound", "label": "Knee Round", "value": "" },
-          { "key": "Loosing", "label": "Loosing", "value": "" }
-        ]
-      },
-      {
-        "category": "Formal Shirt Pant",
-        "variants": [
-          {
-            "type": "Shirt",
-            "measurements": [
-              { "key": "FullLength", "label": "Full Length", "value": "" },
-              { "key": "Shoulder", "label": "Shoulder", "value": "" },
-              { "key": "Bust", "label": "Bust", "value": "" },
-              { "key": "Waist", "label": "Waist", "value": "" },
-              { "key": "Hip", "label": "Hip", "value": "" },
-              { "key": "NeckRound", "label": "Neck Round", "value": "" },
-              { "key": "NeckDepth", "label": "Neck Depth", "value": "" },
-              { "key": "SleeveLength", "label": "Sleeve Length", "value": "" },
-              { "key": "SleeveRound", "label": "Sleeve Round", "value": "" },
-              { "key": "Bicep", "label": "Bicep", "value": "" },
-              { "key": "Armhole", "label": "Armhole", "value": "" },
-              { "key": "Loosing", "label": "Loosing", "value": "" }
-            ]
-          },
-          {
-            "type": "Pant",
-            "measurements": [
-              { "key": "FullLength", "label": "Full Length", "value": "" },
-              { "key": "Bottom", "label": "Bottom", "value": "" },
-              { "key": "KneeLength", "label": "Knee Length", "value": "" },
-              { "key": "KneeRound", "label": "Knee Round", "value": "" },
-              { "key": "ThighsRound", "label": "Thighs Round", "value": "" },
-              { "key": "ThighsLength", "label": "Thighs Length", "value": "" },
-              { "key": "Waist", "label": "Waist", "value": "" },
-              { "key": "Hip", "label": "Hip", "value": "" },
-              { "key": "CrotchLength", "label": "Crotch Length", "value": "" },
-              { "key": "InnerLength", "label": "Inner Length", "value": "" },
-              { "key": "Loosing", "label": "Loosing", "value": "" }
-            ]
-          }
-        ]
-      },
-      {
-        "category": "Jacket",
-        "variants": [
-          {
-            "type": "Standard",
-            "measurements": [
-              { "key": "FullLength", "label": "Full Length", "value": "" },
-              { "key": "Shoulder", "label": "Shoulder", "value": "" },
-              { "key": "BackNeck", "label": "Back Neck", "value": "" },
-              { "key": "FrontNeck", "label": "Front Neck", "value": "" },
-              { "key": "Bust", "label": "Bust", "value": "" },
-              { "key": "Waist", "label": "Waist", "value": "" },
-              { "key": "Hip", "label": "Hip", "value": "" },
-              { "key": "TuckPoint", "label": "Tuck Point", "value": "" },
-              { "key": "WaistPoint", "label": "Waist Point", "value": "" },
-              { "key": "Gear", "label": "Gear", "value": "" },
-              { "key": "Loosing", "label": "Loosing", "value": "" }
-            ]
-          }
-        ]
-      }
-    ]
-  };
+      })),
+    },
+    {
+      category: "Blouses",
+      variants: [
+        "Full Kotori",
+        "Half Kotori",
+        "Princess Cut",
+        "Four Tucks",
+      ].map((type) => ({
+        type: type,
+        measurements: [
+          { key: "FullLength", label: "Full Length", value: "" },
+          { key: "Shoulder", label: "Shoulder", value: "" },
+          { key: "BackNeck", label: "Back Neck", value: "" },
+          { key: "FrontNeck", label: "Front Neck", value: "" },
+          { key: "UpperBust", label: "Upper Bust", value: "" },
+          { key: "MiddleBust", label: "Middle Bust", value: "" },
+          { key: "waistRound", label: "waist Round", value: "" },
+          { key: "Tucks", label: "Tucks", value: "" },
+          { key: "SleeveLength", label: "Sleeve Length", value: "" },
+          { key: "SleeveRound", label: "Sleeve Round", value: "" },
+          { key: "SleeveBicep", label: "Sleeve Bicep", value: "" },
+          { key: "Armhole", label: "Armhole", value: "" },
+          { key: "Loosing", label: "Loosing", value: "" },
+        ],
+      })),
+    },
+    {
+      category: "Gharara Blouse",
+      variants: ["Fish Cut", "Circular", "Kaliwala", "Pleated"].map((type) => ({
+        type: type,
+        measurements: [
+          { key: "FullLength", label: "Full Length", value: "" },
+          { key: "WaistRound", label: "Waist Round", value: "" },
+          { key: "HipRound", label: "Hip Round", value: "" },
+          { key: "KneeLength", label: "Knee Length", value: "" },
+          { key: "HipLength", label: "Hip Length", value: "" },
+          { key: "Shoulder", label: "Shoulder", value: "" },
+          { key: "BackNeck", label: "Back Neck", value: "" },
+          { key: "FrontNeck", label: "Front Neck", value: "" },
+          { key: "UpperBust", label: "Upper Bust", value: "" },
+          { key: "MiddleBust", label: "Middle Bust", value: "" },
+          { key: "waistRound", label: "waist Round", value: "" },
+          { key: "Tucks", label: "Tucks", value: "" },
+          { key: "SleeveLength", label: "Sleeve Length", value: "" },
+          { key: "SleeveRound", label: "Sleeve Round", value: "" },
+          { key: "SleeveBicep", label: "Sleeve Bicep", value: "" },
+          { key: "Armhole", label: "Armhole", value: "" },
+          { key: "Loosing", label: "Loosing", value: "" },
+        ],
+      })),
+    },
+    {
+      category: "Long One Piece",
+      variants: [
+        {
+          type: "Standard",
+          measurements: [
+            { key: "FullLength", label: "Full Length", value: "" },
+            { key: "Shoulder", label: "Shoulder", value: "" },
+            { key: "BackNeck", label: "Back Neck", value: "" },
+            { key: "FrontNeck", label: "Front Neck", value: "" },
+            { key: "UpperBust", label: "Upper Bust", value: "" },
+            { key: "LowerBust", label: "Lower Bust", value: "" },
+            { key: "Waist", label: "Waist", value: "" },
+            { key: "WaistLength", label: "Waist Length", value: "" },
+            { key: "Hip", label: "Hip", value: "" },
+            { key: "Gear", label: "Gear", value: "" },
+            { key: "Loosing", label: "Loosing", value: "" },
+          ],
+        },
+      ],
+    },
+    {
+      category: "Saree",
+      variants: [
+        "Navwari Saree",
+        "6 Wari Saree",
+        "Ready to Wear Saree",
+        "Study Rajalakshmi Saadi",
+        "Brahmakshi Saadi",
+        "Sahi Mastani Sade",
+        "Peshwa Mastani Sade",
+        "Peshwa Brahmi Saadi",
+        "Kolhapuri Saadi",
+        "Kolapuri Mastani Sade",
+        "Jijau Saadi",
+        "Bramni Saadi",
+        "Shahi Makshani Saadi",
+        "Shahi Brahmani Saadi",
+        "Kolapuri Brahmi Saadi",
+        "Kulapuri Peshwai Brahni Saadi",
+        "Dev Sena Saadi",
+      ],
+      measurements: [
+        { key: "FullLength", label: "Full Length", value: "" },
+        { key: "Waist", label: "Waist", value: "" },
+        { key: "Hip", label: "Hip", value: "" },
+        { key: "ThighsLength", label: "Thighs Length", value: "" },
+        { key: "ThighsRound", label: "Thighs Round", value: "" },
+        { key: "KneeLength", label: "Knee Length", value: "" },
+        { key: "KneeRound", label: "Knee Round", value: "" },
+        { key: "Loosing", label: "Loosing", value: "" },
+      ],
+    },
+    {
+      category: "Formal Shirt Pant",
+      variants: [
+        {
+          type: "Shirt",
+          measurements: [
+            { key: "FullLength", label: "Full Length", value: "" },
+            { key: "Shoulder", label: "Shoulder", value: "" },
+            { key: "Bust", label: "Bust", value: "" },
+            { key: "Waist", label: "Waist", value: "" },
+            { key: "Hip", label: "Hip", value: "" },
+            { key: "NeckRound", label: "Neck Round", value: "" },
+            { key: "NeckDepth", label: "Neck Depth", value: "" },
+            { key: "SleeveLength", label: "Sleeve Length", value: "" },
+            { key: "SleeveRound", label: "Sleeve Round", value: "" },
+            { key: "Bicep", label: "Bicep", value: "" },
+            { key: "Armhole", label: "Armhole", value: "" },
+            { key: "Loosing", label: "Loosing", value: "" },
+          ],
+        },
+        {
+          type: "Pant",
+          measurements: [
+            { key: "FullLength", label: "Full Length", value: "" },
+            { key: "Bottom", label: "Bottom", value: "" },
+            { key: "KneeLength", label: "Knee Length", value: "" },
+            { key: "KneeRound", label: "Knee Round", value: "" },
+            { key: "ThighsRound", label: "Thighs Round", value: "" },
+            { key: "ThighsLength", label: "Thighs Length", value: "" },
+            { key: "Waist", label: "Waist", value: "" },
+            { key: "Hip", label: "Hip", value: "" },
+            { key: "CrotchLength", label: "Crotch Length", value: "" },
+            { key: "InnerLength", label: "Inner Length", value: "" },
+            { key: "Loosing", label: "Loosing", value: "" },
+          ],
+        },
+      ],
+    },
+    {
+      category: "Jacket",
+      variants: [
+        {
+          type: "Standard",
+          measurements: [
+            { key: "FullLength", label: "Full Length", value: "" },
+            { key: "Shoulder", label: "Shoulder", value: "" },
+            { key: "BackNeck", label: "Back Neck", value: "" },
+            { key: "FrontNeck", label: "Front Neck", value: "" },
+            { key: "Bust", label: "Bust", value: "" },
+            { key: "Waist", label: "Waist", value: "" },
+            { key: "Hip", label: "Hip", value: "" },
+            { key: "TuckPoint", label: "Tuck Point", value: "" },
+            { key: "WaistPoint", label: "Waist Point", value: "" },
+            { key: "Gear", label: "Gear", value: "" },
+            { key: "Loosing", label: "Loosing", value: "" },
+          ],
+        },
+      ],
+    },
+  ],
+};

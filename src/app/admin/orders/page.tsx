@@ -495,10 +495,9 @@ function OrderCard({
                             {g.category || g.order?.orderType || "Garment"}
                           </h5>
                           <p className="text-xs text-gray-500">
-                            {g.variant && (
-                              <span>Variant: {g.variant} • </span>
-                            )}
-                            Quantity: {g.order?.quantity || 1} • Urgency: {g.order?.urgency || "Normal"}
+                            {g.variant && <span>Variant: {g.variant} • </span>}
+                            Quantity: {g.order?.quantity || 1} • Urgency:{" "}
+                            {g.order?.urgency || "Normal"}
                           </p>
                         </div>
                       </div>
@@ -614,7 +613,6 @@ function OrderCard({
                                   <div className="text-sm font-semibold text-gray-900">
                                     {String(value)}
                                   </div>
-                                  
                                 </div>
                               )
                             )}
@@ -622,70 +620,103 @@ function OrderCard({
                         </div>
                       )}
                     {/* Designs Section */}
-                    {g.designs && Array.isArray(g.designs) && g.designs.length > 0 && (
-                      <div className="mt-4">
-                        <h6 className="text-sm font-medium text-purple-700 mb-2">Designs</h6>
-                        <div className="space-y-4">
-                          {g.designs.map((design: any, dIdx: number) => (
-                            <div key={dIdx} className="bg-white border border-purple-100 rounded-lg p-3">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-semibold text-purple-900">{design.name || `Design ${dIdx + 1}`}</span>
-                                <span className="text-green-700 font-bold">₹{design.amount}</span>
-                              </div>
-                              {design.designDescription && (
-                                <div className="mb-2 text-gray-700 text-sm">{design.designDescription}</div>
-                              )}
-                              {/* Canvas Drawing */}
-                              {design.canvasImage && (
-                                <div className="mb-2">
-                                  <div className="text-xs text-gray-500 mb-1">Canvas Drawing:</div>
-                                  <img
-                                    src={design.canvasImage}
-                                    alt="Canvas Drawing"
-                                    className="w-full max-w-xs h-auto border rounded shadow-sm"
-                                    style={{ maxHeight: 120 }}
-                                    onClick={() => onImageClick(design.canvasImage, 'Canvas Drawing')}
-                                  />
+                    {g.designs &&
+                      Array.isArray(g.designs) &&
+                      g.designs.length > 0 && (
+                        <div className="mt-4">
+                          <h6 className="text-sm font-medium text-purple-700 mb-2">
+                            Designs
+                          </h6>
+                          <div className="space-y-4">
+                            {g.designs.map((design: any, dIdx: number) => (
+                              <div
+                                key={dIdx}
+                                className="bg-white border border-purple-100 rounded-lg p-3"
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-semibold text-purple-900">
+                                    {design.name || `Design ${dIdx + 1}`}
+                                  </span>
+                                  <span className="text-green-700 font-bold">
+                                    ₹{design.amount}
+                                  </span>
                                 </div>
-                              )}
-                              {/* Reference Images */}
-                              {(design.designReferenceFiles && Array.isArray(design.designReferenceFiles) && design.designReferenceFiles.length > 0
-                                ? design.designReferenceFiles
-                                : (design.designReference && Array.isArray(design.designReference) ? design.designReference : [])
-                              ).length > 0 && (
-                                <div className="mb-2">
-                                  <div className="text-xs text-gray-500 mb-1">Reference Images:</div>
-                                  <div className="flex flex-wrap gap-2">
-                                    {(design.designReferenceFiles && design.designReferenceFiles.length > 0
-                                      ? design.designReferenceFiles
-                                      : design.designReference
-                                    ).map((file: any, imgIdx: number) => {
-                                      let src = "";
-                                      if (typeof file === "string") {
-                                        src = file;
-                                      } else if (file instanceof File) {
-                                        src = URL.createObjectURL(file);
-                                      } else if (file?.url) {
-                                        src = file.url;
-                                      }
-                                      return src ? (
-                                        <img
-                                          key={imgIdx}
-                                          src={src}
-                                          alt={`Reference ${imgIdx + 1}`}
-                                          className="w-20 h-20 object-cover border rounded cursor-pointer"
-                                          onClick={() => onImageClick(src, `Reference ${imgIdx + 1}`)}
-                                        />
-                                      ) : null;
-                                    })}
+                                {design.designDescription && (
+                                  <div className="mb-2 text-gray-700 text-sm">
+                                    {design.designDescription}
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                                )}
+                                {/* Canvas Drawing */}
+                                {design.canvasImage && (
+                                  <div className="mb-2">
+                                    <div className="text-xs text-gray-500 mb-1">
+                                      Canvas Drawing:
+                                    </div>
+                                    <img
+                                      src={design.canvasImage}
+                                      alt="Canvas Drawing"
+                                      className="w-full max-w-xs h-auto border rounded shadow-sm"
+                                      style={{ maxHeight: 120 }}
+                                      onClick={() =>
+                                        onImageClick(
+                                          design.canvasImage,
+                                          "Canvas Drawing"
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                )}
+                                {/* Reference Images */}
+                                {(design.designReferenceFiles &&
+                                Array.isArray(design.designReferenceFiles) &&
+                                design.designReferenceFiles.length > 0
+                                  ? design.designReferenceFiles
+                                  : design.designReference &&
+                                    Array.isArray(design.designReference)
+                                  ? design.designReference
+                                  : []
+                                ).length > 0 && (
+                                  <div className="mb-2">
+                                    <div className="text-xs text-gray-500 mb-1">
+                                      Reference Images:
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {(design.designReferenceFiles &&
+                                      design.designReferenceFiles.length > 0
+                                        ? design.designReferenceFiles
+                                        : design.designReference
+                                      ).map((file: any, imgIdx: number) => {
+                                        let src = "";
+                                        if (typeof file === "string") {
+                                          src = file;
+                                        } else if (file instanceof File) {
+                                          src = URL.createObjectURL(file);
+                                        } else if (file?.url) {
+                                          src = file.url;
+                                        }
+                                        return src ? (
+                                          <img
+                                            key={imgIdx}
+                                            src={src}
+                                            alt={`Reference ${imgIdx + 1}`}
+                                            className="w-20 h-20 object-cover border rounded cursor-pointer"
+                                            onClick={() =>
+                                              onImageClick(
+                                                src,
+                                                `Reference ${imgIdx + 1}`
+                                              )
+                                            }
+                                          />
+                                        ) : null;
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </div>
                 ))}
               </div>
@@ -846,6 +877,7 @@ export default function AdminOrdersPage() {
     return (
       (order.fullName && order.fullName.toLowerCase().includes(q)) ||
       (order.email && order.email.toLowerCase().includes(q)) ||
+      (order.contactNumber && order.contactNumber.includes(q)) ||
       (order.oid && order.oid.toLowerCase().includes(q)) ||
       (order.garments &&
         order.garments.some(
@@ -907,7 +939,7 @@ export default function AdminOrdersPage() {
                 type="text"
                 value={search}
                 onChange={handleSearch}
-                placeholder="Search orders by name, email, or order ID..."
+                placeholder="Search orders by name, email, phone, or order ID..."
                 className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               />
             </div>

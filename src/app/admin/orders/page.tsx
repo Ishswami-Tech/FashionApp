@@ -442,12 +442,7 @@ function OrderCard({
                       {order.deliveryDate}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Method:</span>
-                    <span className="text-sm font-medium">
-                      {order.deliveryMethod}
-                    </span>
-                  </div>
+
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Budget:</span>
                     <span className="text-sm font-medium text-green-600">

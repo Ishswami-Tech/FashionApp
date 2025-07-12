@@ -102,9 +102,6 @@ const deliverySchema = z.object({
     .refine((date) => date && date >= addDays(new Date(), 3), {
       message: "Delivery date must be at least 3 days from today",
     }),
-  deliveryMethod: z.enum(["home", "pickup", "courier"], {
-    required_error: "Select a delivery method",
-    }),
   payment: z.enum(["cod", "upi", "bank"], {
     required_error: "Select a payment preference",
   }),
@@ -359,7 +356,6 @@ export default function OrderFormPage() {
           <table>
             <tr><th>Total Garments</th><td>${garmentsData.length}</td></tr>
             <tr><th>Delivery Date</th><td>${deliveryData.deliveryDate?.toLocaleDateString?.() || String(deliveryData.deliveryDate)}</td></tr>
-            <tr><th>Delivery Method</th><td>${deliveryData.deliveryMethod}</td></tr>
             <tr><th>Payment Method</th><td>${deliveryData.payment}</td></tr>
             <tr><th>Special Instructions</th><td>${deliveryData.specialInstructions || 'None'}</td></tr>
           </table>
@@ -425,20 +421,27 @@ export default function OrderFormPage() {
       return;
     }
 
-    // Get the actual data from component state
-    const customerData = submittedOrder || {
-      fullName: form.getValues().fullName,
-      contactNumber: form.getValues().contactNumber,
-      email: form.getValues().email,
-      fullAddress: form.getValues().fullAddress
-    };
-
     const garmentsData = submittedOrder?.garments || garments;
     const deliveryData = submittedOrder || deliveryForm.getValues();
+    const orderIdValue = orderId || submittedOrder?.oid || '';
+    const garment = garmentsData[0]; // Only first garment for now
+    const design = garment?.designs && Array.isArray(garment.designs) && garment.designs.length > 0 ? garment.designs[0] : null;
 
-    // Helper to render safe images (TEMP: remove all images for debugging)
+    // Helper to render up to 3 valid images per design, 300px wide
     function renderDesignImages(design: any) {
-      return '<span class="fallback">[Images temporarily removed for debugging]</span>';
+      let images: string[] = [];
+      if (design.canvasImage && typeof design.canvasImage === 'string' && design.canvasImage.startsWith('data:image/')) {
+        images.push(`<img src="${design.canvasImage}" alt="Canvas Drawing" class="canvas-image" />`);
+      }
+      if (Array.isArray(design.designReference)) {
+        images = images.concat(
+          design.designReference
+            .filter((img: any) => typeof img === 'string' && img.startsWith('data:image/'))
+            .slice(0, 2)
+            .map((img: any, idx: number) => `<img src="${img}" alt="Reference ${idx + 1}" class="canvas-image" />`)
+        );
+      }
+      return images.slice(0, 3).join('');
     }
 
     const tailorContent = `
@@ -447,141 +450,64 @@ export default function OrderFormPage() {
       <head>
         <title>Tailor Work Order</title>
         <style>
-          * {
-            -webkit-print-color-adjust: exact !important;
-            color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          @media print {
-            @page { margin: 0.5in; size: A4; }
-            body { margin: 0; padding: 10px; font-family: Arial, sans-serif; font-size: 10px; line-height: 1.2; }
-            .header { background: #4caf50 !important; color: white !important; padding: 15px; text-align: center; margin-bottom: 15px; }
-            .section { margin-bottom: 15px; page-break-inside: avoid; }
-            .section-title { background: #f8f9fa !important; padding: 8px; border-left: 4px solid #4caf50 !important; margin-bottom: 10px; font-weight: bold; font-size: 11px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9px; }
-            th, td { border: 1px solid #ddd !important; padding: 6px; text-align: left; }
-            th { background-color: #f8f9fa !important; font-weight: bold; }
-            .design-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
-            .design-item { border: 1px solid #ddd !important; padding: 8px; border-radius: 4px; font-size: 9px; }
-            .measurement-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; }
-            .measurement-item { background: #f8f9fa !important; padding: 6px; border-radius: 4px; text-align: center; font-size: 8px; }
-            .highlight { background: #e8f5e8 !important; padding: 10px; border-radius: 4px; border-left: 4px solid #4caf50 !important; font-size: 9px; }
-            .canvas-image { max-width: 100px; max-height: 80px; object-fit: contain; border: 1px solid #ddd !important; border-radius: 2px; margin: 2px; }
-            .fallback { color: #d32f2f; font-size: 11px; font-weight: bold; margin: 10px 0; }
-          }
-          body { font-family: Arial, sans-serif; margin: 10px; font-size: 10px; line-height: 1.2; }
-          .header { background: #4caf50; color: white; padding: 15px; text-align: center; margin-bottom: 15px; border-radius: 4px; }
-          .section { margin-bottom: 15px; }
-          .section-title { background: #f8f9fa; padding: 8px; border-left: 4px solid #4caf50; margin-bottom: 10px; font-weight: bold; font-size: 11px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9px; }
-          th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-          th { background-color: #f8f9fa; font-weight: bold; }
-          .design-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
-          .design-item { border: 1px solid #ddd; padding: 8px; border-radius: 4px; font-size: 9px; }
-          .measurement-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; }
-          .measurement-item { background: #f8f9fa; padding: 6px; border-radius: 4px; text-align: center; font-size: 8px; }
-          .highlight { background: #e8f5e8; padding: 10px; border-radius: 4px; border-left: 4px solid #4caf50; font-size: 9px; }
-          .canvas-image { max-width: 100px; max-height: 80px; object-fit: contain; border: 1px solid #ddd; border-radius: 2px; margin: 2px; }
-          .fallback { color: #d32f2f; font-size: 11px; font-weight: bold; margin: 10px 0; }
+          body { font-family: Arial, sans-serif; font-size: 13px; background: #fafbfc; margin: 0; padding: 0; }
+          .main-container { max-width: 1000px; margin: 24px auto; background: #fff; border: 2px solid #388e3c; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 32px 24px; }
+          .order-id { font-size: 18px; font-weight: bold; color: #388e3c; margin-bottom: 18px; letter-spacing: 1px; }
+          .two-col { display: grid; grid-template-columns: 1fr 1.2fr; gap: 32px; align-items: flex-start; }
+          .section-title { font-weight: bold; color: #388e3c; margin-bottom: 10px; font-size: 16px; border-bottom: 1.5px solid #388e3c; padding-bottom: 4px; }
+          .measurement-list { list-style: none; padding: 0; margin: 0; }
+          .measurement-list li { margin-bottom: 10px; padding: 10px 12px; background: #f8f9fa; border: 1.5px solid #e0e0e0; border-radius: 6px; font-size: 13px; font-weight: 500; color: #222; }
+          .measurement-label { font-weight: bold; color: #222; margin-right: 8px; }
+          .canvas-image { max-width: 300px; max-height: 300px; width: 300px; height: auto; object-fit: contain; border: 2px solid #388e3c; border-radius: 6px; background: #f8f9fa; box-shadow: 0 1px 4px #0001; margin-bottom: 10px; }
+          .design-images { display: flex; gap: 16px; margin: 18px 0; }
+          .right-col-section { margin-bottom: 24px; }
+          .work-instructions { background: #e8f5e8; border-left: 4px solid #388e3c; border-radius: 6px; padding: 16px 14px; font-size: 14px; color: #222; margin-top: 18px; }
+          table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+          th, td { border: 1.5px solid #e0e0e0; padding: 8px 10px; text-align: left; }
         </style>
       </head>
       <body>
-        <div class="header">
-          <h1 style="margin: 0; font-size: 16px;">✂️ Tailor Work Order</h1>
-          <p style="margin: 5px 0; font-size: 10px;">Order ID: ${orderId || submittedOrder?.oid}</p>
-          <p style="margin: 5px 0; font-size: 10px;">Date: ${new Date().toLocaleDateString()}</p>
-        </div>
-
-        <div class="section">
-          <div class="section-title">👤 Customer Information</div>
-          <table>
-            <tr><th>Name</th><td>${customerData.fullName}</td></tr>
-            <tr><th>Phone</th><td>${customerData.contactNumber}</td></tr>
-            <tr><th>Email</th><td>${customerData.email}</td></tr>
-            <tr><th>Address</th><td>${customerData.fullAddress}</td></tr>
-          </table>
-        </div>
-
-        <div class="section">
-          <div class="section-title">👕 Garment Specifications</div>
-          ${garmentsData.length === 0 ? `<div class="fallback">No garments in this order.</div>` : (() => {
-            const garment = garmentsData[0];
-            return `
-              <div class="design-item">
-                <h4 style="margin: 2px 0; font-size: 10px;">Garment 1: ${garment.order?.orderType || ''} - ${garment.variant || ''}</h4>
-                <p style="margin: 2px 0; font-size: 9px;"><strong>Quantity:</strong> ${garment.order?.quantity || ''}</p>
-                <p style="margin: 2px 0; font-size: 9px;"><strong>Urgency:</strong> ${garment.order?.urgency || ''}</p>
-                <p style="margin: 2px 0; font-size: 9px;"><strong>Special Instructions:</strong> ${deliveryData.specialInstructions || 'None'}</p>
+        <div class="main-container">
+          <div class="order-id">Order ID: ${orderIdValue}</div>
+          <div class="two-col">
+            <div>
+              <div class="section-title">Measurements</div>
+              <ul class="measurement-list">
+                ${garment && garment.measurement?.measurements && Object.keys(garment.measurement.measurements).length > 0 ?
+                  Object.entries(garment.measurement.measurements).map(([key, value]: [string, any]) => `
+                    <li><span class="measurement-label">${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</span> ${value}</li>
+                  `).join('') : '<li>No measurements</li>'}
+              </ul>
+            </div>
+            <div>
+              <div class="right-col-section">
+                <div class="section-title">Design Reference</div>
+                ${design ? `
+                  <div><strong>${garment.order?.orderType || ''} - ${garment.variant || ''}</strong></div>
+                  <div><strong>Design 1:</strong> ${design.name || 'Design 1'}</div>
+                  <div>${design.designDescription || 'Custom design'}</div>
+                  <div class="design-images">${renderDesignImages(design) || '<span>No images</span>'}</div>
+                ` : '<div>No design data</div>'}
               </div>
-            `;
-          })()}
-        </div>
-
-        <div class="section">
-          <div class="section-title">🎨 Design References</div>
-          <div class="design-grid">
-            ${garmentsData.length === 0 ? `<div class="fallback">No designs available.</div>` : (() => {
-              const garment = garmentsData[0];
-              if (garment.designs && Array.isArray(garment.designs) && garment.designs.length > 0) {
-                const design = garment.designs[0];
-                return `
-                  <div class="design-item">
-                    <p style="margin: 2px 0;"><strong>${garment.order?.orderType || ''} - ${garment.variant || ''}</strong></p>
-                    <p style="margin: 2px 0;"><strong>Design 1:</strong> ${design.name || 'Design 1'}</p>
-                    <p style="margin: 2px 0;">${design.designDescription || 'Custom design'}</p>
-                    <span class="fallback">[Images temporarily removed for debugging]</span>
+                                <div class="right-col-section">
+                    <div class="section-title">Delivery Details</div>
+                    <table>
+                      <tr><th>Delivery Date</th><td>${deliveryData.deliveryDate?.toLocaleDateString?.() || String(deliveryData.deliveryDate)}</td></tr>
+                    </table>
                   </div>
-                `;
-              } else {
-                return `<div class="fallback">No designs for this garment.</div>`;
-              }
-            })()}
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">📏 Customer Measurements</div>
-          <div class="measurement-grid">
-            ${garmentsData.length === 0 ? `<div class="fallback">No measurements available.</div>` : (() => {
-              const garment = garmentsData[0];
-              if (garment.measurement?.measurements && Object.keys(garment.measurement.measurements).length > 0) {
-                return Object.entries(garment.measurement.measurements).map(([key, value]: [string, any]) => `
-                  <div class="measurement-item">
-                    <strong>${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</strong><br>
-                    ${value}
-                  </div>
-                `).join('');
-              } else {
-                return `<div class="fallback">No measurements for this garment.</div>`;
-              }
-            })()}
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">🚚 Delivery Details</div>
-          <table>
-            <tr><th>Delivery Date</th><td>${deliveryData.deliveryDate?.toLocaleDateString?.() || String(deliveryData.deliveryDate)}</td></tr>
-            <tr><th>Delivery Method</th><td>${deliveryData.deliveryMethod}</td></tr>
-          </table>
-        </div>
-
-        <div class="section">
-          <div class="section-title">📝 Work Instructions</div>
-          <div class="highlight">
-            <p style="margin: 2px 0;"><strong>Garments to be made:</strong></p>
-            ${garmentsData.length === 0 ? `<span class="fallback">No garments in this order.</span>` : (() => {
-              const garment = garmentsData[0];
-              return `
-                <p style="margin: 2px 0;">• ${garment.order?.orderType || ''} in ${garment.variant || ''} variant</p>
-                <p style="margin: 2px 0;">• Quantity: ${garment.order?.quantity || ''}</p>
-                <p style="margin: 2px 0;">• Urgency: ${garment.order?.urgency || ''}</p>
-              `;
-            })()}
-            <p style="margin: 2px 0;">• Follow the design references provided</p>
-            <p style="margin: 2px 0;">• Use the exact measurements provided</p>
-            <p style="margin: 2px 0;">• Special instructions: ${deliveryData.specialInstructions || 'None'}</p>
-            <p style="margin: 2px 0;">• Complete by: ${deliveryData.deliveryDate?.toLocaleDateString?.() || String(deliveryData.deliveryDate)}</p>
+              <div class="work-instructions">
+                <div style="font-weight:bold; margin-bottom:6px;">Work Instructions</div>
+                ${garment ? `
+                  <div>• ${garment.order?.orderType || ''} in ${garment.variant || ''} variant</div>
+                  <div>• Quantity: ${garment.order?.quantity || ''}</div>
+                  <div>• Urgency: ${garment.order?.urgency || ''}</div>
+                  <div>• Follow the design references provided</div>
+                  <div>• Use the exact measurements provided</div>
+                  <div>• Special instructions: ${deliveryData.specialInstructions || 'None'}</div>
+                  <div>• Complete by: ${deliveryData.deliveryDate?.toLocaleDateString?.() || String(deliveryData.deliveryDate)}</div>
+                ` : '<div>No garment data</div>'}
+              </div>
+            </div>
           </div>
         </div>
       </body>
@@ -819,7 +745,6 @@ export default function OrderFormPage() {
           <table>
             <tr><th>Total Garments</th><td>${garmentsData.length}</td></tr>
             <tr><th>Delivery Date</th><td>${deliveryData.deliveryDate?.toLocaleDateString?.() || String(deliveryData.deliveryDate)}</td></tr>
-            <tr><th>Delivery Method</th><td>${deliveryData.deliveryMethod}</td></tr>
             <tr><th>Payment Method</th><td>${deliveryData.payment}</td></tr>
             <tr><th>Special Instructions</th><td>${deliveryData.specialInstructions || 'None'}</td></tr>
           </table>
@@ -866,7 +791,6 @@ export default function OrderFormPage() {
           <div class="section-title">🚚 Delivery Information</div>
           <table>
             <tr><th>Delivery Date</th><td>${deliveryData.deliveryDate?.toLocaleDateString?.() || String(deliveryData.deliveryDate)}</td></tr>
-            <tr><th>Delivery Method</th><td>${deliveryData.deliveryMethod}</td></tr>
           </table>
         </div>
 
@@ -1099,7 +1023,6 @@ export default function OrderFormPage() {
     mode: "onChange",
     defaultValues: {
       deliveryDate: undefined,
-      deliveryMethod: undefined,
       payment: undefined,
       specialInstructions: "",
     },
@@ -1525,7 +1448,7 @@ export default function OrderFormPage() {
                               <SelectValue placeholder="Select garment category" />
                         </SelectTrigger>
                         <SelectContent>
-                              {garmentOptions.map((opt) => (
+                              {garmentOptions.map((opt: { value: string; label: string }) => (
                                 <SelectItem key={opt.value} value={opt.value}>
                                   {opt.label}
                                 </SelectItem>
@@ -1901,31 +1824,7 @@ export default function OrderFormPage() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={deliveryForm.control}
-                  name="deliveryMethod"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Delivery Method *</FormLabel>
-                      <FormControl>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select delivery method" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="home">Home Delivery</SelectItem>
-                            <SelectItem value="pickup">Pickup from Shop</SelectItem>
-                            <SelectItem value="courier">Courier Service</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
                 {/* Add a summary table above payment preference */}
                 <Table className="mb-4 border rounded bg-gray-50">
                   <TableHeader>
@@ -2138,16 +2037,7 @@ export default function OrderFormPage() {
                   }
                 }
               `}</style>
-              {/* Print Instructions */}
-              <div className="print:hidden mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h3 className="font-semibold text-blue-900 mb-2">Print Instructions:</h3>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• <strong>Customer Copy:</strong> Print pages 1-2 (Order details & customer info)</li>
-                  <li>• <strong>Tailor Copy:</strong> Print pages 3-4 (Designs & measurements)</li>
-                  <li>• <strong>Admin Copy:</strong> Print pages 5-6 (Pricing & payment details)</li>
-                  <li>• <strong>All Copies:</strong> Print all pages for complete documentation</li>
-                </ul>
-                    </div>
+
 
               {/* SECTION 1: ORDER ID & CUSTOMER INFORMATION (Customer Copy) */}
               <div className="print:break-after-page">
@@ -2163,8 +2053,8 @@ export default function OrderFormPage() {
                     <div className="text-sm text-green-700 mb-1">Order ID</div>
                     <div className="text-xl sm:text-2xl font-mono font-bold text-green-800">{submittedOrder?.oid || orderOid}</div>
                     <div className="text-xs text-green-600 mt-1">Order Date: {submittedOrder?.orderDate || orderDate}</div>
+                    </div>
                   </div>
-                </div>
 
                               {/* Customer Information */}
                 <div className="mb-6">
@@ -2291,7 +2181,7 @@ export default function OrderFormPage() {
                                       let src = "";
                                       if (typeof file === "string") {
                                         src = file;
-                                      } else if (file instanceof File) {
+                                      } else if (typeof window !== "undefined" && file instanceof File) {
                                         src = URL.createObjectURL(file);
                                       } else if (file?.url) {
                                         src = file.url;
@@ -2371,10 +2261,6 @@ export default function OrderFormPage() {
                         <div className="flex justify-between">
                           <span className="text-orange-700 text-sm">Delivery Date:</span>
                           <span className="font-semibold text-sm">{submittedOrder?.deliveryDate || deliveryForm.getValues().deliveryDate?.toLocaleDateString?.() || String(deliveryForm.getValues().deliveryDate)}</span>
-                                </div>
-                        <div className="flex justify-between">
-                          <span className="text-orange-700 text-sm">Method:</span>
-                          <span className="font-semibold capitalize text-sm">{submittedOrder?.deliveryMethod || deliveryForm.getValues().deliveryMethod}</span>
                                 </div>
                                 </div>
                                         </div>

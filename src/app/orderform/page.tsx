@@ -1199,6 +1199,32 @@ export default function OrderFormPage() {
         setSubmittedOrder(result.order || null);
         setGarments([]); // clear cart after submit
         setStep(4); // Move to confirmation step after successful submission
+        // WhatsApp message sending
+        try {
+          const order = result.order;
+          const invoiceLink = `/api/proxy-pdf?type=customer&oid=${order.oid}`;
+          const params = [
+            order.fullName || "",
+            order.oid || "",
+            order.orderDate || "",
+            (order.garments || [])
+              .map((g: any) => g.order?.orderType)
+              .join(", "),
+            order.totalAmount || "",
+            order.deliveryDate || "",
+            `${window.location.origin}${invoiceLink}`,
+          ];
+          fetch("/api/whatsapp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: order.contactNumber, // must be in international format
+              params,
+            }),
+          });
+        } catch (err) {
+          console.error("Failed to send WhatsApp message:", err);
+        }
         // Optionally reset form or redirect here
       } else {
         setSubmitError(result.error || "Failed to submit order.");

@@ -6,7 +6,7 @@ import { google } from "googleapis";
 import Busboy from "busboy";
 import { Readable } from "stream";
 import cloudinary from '@/lib/cloudinary';
-import { htmlToPdfBuffer } from '@/lib/pdf';
+import { generatePdf } from '@/lib/pdf';
 
 export const config = {
   api: {
@@ -572,9 +572,9 @@ export async function POST(req: NextRequest) {
     const tailorHtml = getTailorInvoiceHtml(savedOrder);
     const adminHtml = getAdminInvoiceHtml(savedOrder);
     const [customerPdf, tailorPdf, adminPdf] = await Promise.all([
-      htmlToPdfBuffer(customerHtml),
-      htmlToPdfBuffer(tailorHtml),
-      htmlToPdfBuffer(adminHtml),
+      generatePdf(customerHtml),
+      generatePdf(tailorHtml),
+      generatePdf(adminHtml),
     ]);
     // Helper to upload PDF buffer to Cloudinary
     async function uploadPdfToCloudinary(buffer, publicId, folder) {

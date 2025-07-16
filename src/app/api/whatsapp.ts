@@ -1,25 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
-  const { to, mediaUrl, mediaType } = await req.json();
+  const { to, params } = await req.json();
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
 
-  if (!to || !mediaUrl || !mediaType) {
-    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  if (!to || !params || params.length !== 7) {
+    return NextResponse.json({ error: 'Missing or invalid parameters' }, { status: 400 });
   }
   if (!phoneNumberId || !accessToken) {
     return NextResponse.json({ error: 'WhatsApp API credentials not set' }, { status: 500 });
   }
 
   const url = `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
-  const payload: any = {
+  const payload = {
     messaging_product: 'whatsapp',
     to,
-    type: mediaType,
-    [mediaType]: {
-      link: mediaUrl,
-      caption: 'Thank you for your order! Here is your invoice from Sony Fashion.'
+    type: 'template',
+    template: {
+      name: 'order_confirmation_invoice', // your template name
+      language: { code: 'en_US' }, // or your template's language code
+      components: [
+        {
+          type: 'body',
+          parameters: params.map((text: string) => ({ type: 'text', text }))
+        }
+      ]
     }
   };
 

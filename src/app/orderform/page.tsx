@@ -1202,7 +1202,7 @@ export default function OrderFormPage() {
         // WhatsApp message sending
         try {
           const order = result.order;
-          const invoiceLink = `/api/proxy-pdf?type=customer&oid=${order.oid}`;
+          const invoiceLink = `https://fashion-app-kappa.vercel.app/api/proxy-pdf?type=customer&oid=${order.oid}`;
           const params = [
             order.fullName || "",
             order.oid || "",
@@ -1212,7 +1212,7 @@ export default function OrderFormPage() {
               .join(", "),
             order.totalAmount || "",
             order.deliveryDate || "",
-            `${window.location.origin}${invoiceLink}`,
+            invoiceLink,
           ];
           fetch("/api/whatsapp", {
             method: "POST",

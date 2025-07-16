@@ -21,18 +21,15 @@ function formatDate(date: Date) {
   return `${dd}/${mm}/${yyyy}`;
 }
 
-// In-memory order sequence tracking (resets on server restart)
-const orderSequence: { [date: string]: number } = {};
-
-function getTodayOrderId(date: Date) {
+// Generate a unique order ID for today using MongoDB
+async function generateOrderId(db, date) {
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const yyyy = date.getFullYear();
-  const key = `${yyyy}${mm}${dd}`;
-  if (!orderSequence[key]) orderSequence[key] = 1;
-  else orderSequence[key]++;
-  const seq = String(orderSequence[key]).padStart(3, '0');
-  return `${yyyy}-${mm}-${dd}-${seq}`;
+  const dateKey = `${dd}/${mm}/${yyyy}`;
+  const orderCount = await db.collection("orders").countDocuments({ orderDate: dateKey });
+  const seq = String(orderCount + 1).padStart(3, '0');
+  return `${yyyy}${mm}${dd}${seq}`;
 }
 
 // Parse multipart form data using busboy
@@ -447,7 +444,10 @@ export async function POST(req: NextRequest) {
     console.log('Parsed files:', files); // LOG parsed files
     const now = new Date();
     const formattedDate = formatDate(now);
-    const oid = getTodayOrderId(now);
+    // Connect to MongoDB early to generate order ID
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB || "fashionapp");
+    const oid = await generateOrderId(db, now);
 
     // 2. Parse and flatten nested JSON fields from the form
     let customer = {};
@@ -560,8 +560,6 @@ export async function POST(req: NextRequest) {
     console.log('Final order to be saved in MongoDB:', order); // LOG final order
 
     // 5. Store in MongoDB
-    const client = await clientPromise;
-    const db = client.db(process.env.MONGODB_DB || "fashionapp");
     const insertResult = await db.collection("orders").insertOne(order);
 
     // Fetch the inserted order (with _id)

@@ -571,11 +571,9 @@ export async function POST(req: NextRequest) {
     const customerHtml = getCustomerInvoiceHtml(savedOrder);
     const tailorHtml = getTailorInvoiceHtml(savedOrder);
     const adminHtml = getAdminInvoiceHtml(savedOrder);
-    const [customerPdf, tailorPdf, adminPdf] = await Promise.all([
-      generatePdf(customerHtml),
-      generatePdf(tailorHtml),
-      generatePdf(adminHtml),
-    ]);
+    const customerPdf = await generatePdf(customerHtml);
+    const tailorPdf = await generatePdf(tailorHtml);
+    const adminPdf = await generatePdf(adminHtml);
     // Helper to upload PDF buffer to Cloudinary
     async function uploadPdfToCloudinary(buffer, publicId, folder) {
       return new Promise((resolve, reject) => {
@@ -597,11 +595,9 @@ export async function POST(req: NextRequest) {
     }
     // Use date and orderId for folder structure
     const invoiceFolder = `invoices/${dateFolder}/${savedOrder.oid}`;
-    const [customerUpload, tailorUpload, adminUpload] = await Promise.all([
-      uploadPdfToCloudinary(customerPdf, 'customer', invoiceFolder),
-      uploadPdfToCloudinary(tailorPdf, 'tailor', invoiceFolder),
-      uploadPdfToCloudinary(adminPdf, 'admin', invoiceFolder),
-    ]);
+    const customerUpload = await uploadPdfToCloudinary(customerPdf, 'customer', invoiceFolder);
+    const tailorUpload = await uploadPdfToCloudinary(tailorPdf, 'tailor', invoiceFolder);
+    const adminUpload = await uploadPdfToCloudinary(adminPdf, 'admin', invoiceFolder);
     // Save URLs to order
     await db.collection("orders").updateOne(
       { _id: savedOrder._id },

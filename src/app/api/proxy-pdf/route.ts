@@ -12,7 +12,10 @@ export async function GET(req: NextRequest) {
     return new NextResponse("Missing type or oid", { status: 400 });
   }
 
-  const [yyyy, mm, dd] = oid.split("-");
+  // Parse new order ID format: yyyymmdd###
+  const yyyy = oid.substring(0, 4);
+  const mm = oid.substring(4, 6);
+  const dd = oid.substring(6, 8);
   const dateFolder = `${dd}-${mm}-${yyyy}`;
   const folder = `invoices/${dateFolder}/${oid}`;
 
@@ -64,4 +67,4 @@ export async function GET(req: NextRequest) {
     console.error("Error downloading PDF from Cloudinary private URL:", err);
     return new NextResponse("PDF not found or error fetching from Cloudinary", { status: 404 });
   }
-} 
+}

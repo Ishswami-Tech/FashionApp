@@ -615,6 +615,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, oid, orderDate: formattedDate, order: updatedOrder });
   } catch (error) {
     console.error("Order API error:", error);
-    return NextResponse.json({ success: false, error: error?.toString() }, { status: 500 });
+    let message = "Unknown error";
+    if (typeof error === "string") message = error;
+    else if (error instanceof Error) message = error.message;
+    else if (error && typeof error === "object" && "message" in error) message = error.message;
+    else message = JSON.stringify(error);
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 } 

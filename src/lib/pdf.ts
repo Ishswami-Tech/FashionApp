@@ -4,7 +4,12 @@ import chromium from "@sparticuz/chromium";
 export async function generatePdf(html: string) {
   let executablePath;
   try {
-    executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || await chromium.executablePath();
+    // Use only chromium.executablePath() on Vercel, env var locally
+    if (process.env.VERCEL) {
+      executablePath = await chromium.executablePath();
+    } else {
+      executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || await chromium.executablePath();
+    }
     const browser = await puppeteer.launch({
       args: chromium.args,
       executablePath,

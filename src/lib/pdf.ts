@@ -4,16 +4,11 @@ import chromium from "@sparticuz/chromium";
 export async function generatePdf(html: string) {
   let executablePath;
   try {
-    // Use only chromium.executablePath() on Vercel, env var locally
-    if (process.env.VERCEL) {
-      executablePath = await chromium.executablePath();
-    } else {
-      executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || await chromium.executablePath();
-    }
+    executablePath = await chromium.executablePath();
     const browser = await puppeteer.launch({
       args: chromium.args,
       executablePath,
-      headless: true,
+      headless: "shell", // Use 'shell' for serverless environments
     });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0" });
@@ -26,9 +21,9 @@ export async function generatePdf(html: string) {
       `Attempted executablePath: ${executablePath}\n` +
       `Error: ${err?.message || err}\n` +
       `\n` +
-      `To fix this on Windows, install Chrome or Chromium and set the environment variable PUPPETEER_EXECUTABLE_PATH to the path of your Chrome/Chromium executable.\n` +
-      `Example: PUPPETEER_EXECUTABLE_PATH=\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\"\n` +
-      `See https://pptr.dev/troubleshooting for more info.`;
+      `If on Windows (local), set PUPPETEER_EXECUTABLE_PATH to your Chrome/Chromium executable.\n` +
+      `On Vercel, no env var is needed.\n` +
+      `See https://pptr.dev/troubleshooting and https://github.com/sparticuz/chromium for more info.`;
     throw new Error(msg);
   }
 } 

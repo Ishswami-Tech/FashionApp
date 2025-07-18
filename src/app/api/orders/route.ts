@@ -21,15 +21,18 @@ function formatDate(date: Date) {
   return `${dd}/${mm}/${yyyy}`;
 }
 
-// Generate a unique order ID for today using MongoDB
-async function generateOrderId(db, date) {
+// In-memory order sequence tracking (resets on server restart)
+const orderSequence: { [date: string]: number } = {};
+
+function getTodayOrderId(date: Date) {
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const yyyy = date.getFullYear();
-  const dateKey = `${dd}/${mm}/${yyyy}`;
-  const orderCount = await db.collection("orders").countDocuments({ orderDate: dateKey });
-  const seq = String(orderCount + 1).padStart(3, '0');
-  return `${yyyy}${mm}${dd}${seq}`;
+  const key = `${yyyy}${mm}${dd}`;
+  if (!orderSequence[key]) orderSequence[key] = 1;
+  else orderSequence[key]++;
+  const seq = String(orderSequence[key]).padStart(3, '0');
+  return `${yyyy}-${mm}-${dd}-${seq}`;
 }
 
 // Parse multipart form data using busboy
@@ -444,10 +447,7 @@ export async function POST(req: NextRequest) {
     console.log('Parsed files:', files); // LOG parsed files
     const now = new Date();
     const formattedDate = formatDate(now);
-    // Connect to MongoDB early to generate order ID
-    const client = await clientPromise;
-    const db = client.db(process.env.MONGODB_DB || "fashionapp");
-    const oid = await generateOrderId(db, now);
+    const oid = getTodayOrderId(now);
 
     // 2. Parse and flatten nested JSON fields from the form
     let customer = {};
@@ -560,6 +560,8 @@ export async function POST(req: NextRequest) {
     console.log('Final order to be saved in MongoDB:', order); // LOG final order
 
     // 5. Store in MongoDB
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB || "fashionapp");
     const insertResult = await db.collection("orders").insertOne(order);
 
     // Fetch the inserted order (with _id)
@@ -569,9 +571,11 @@ export async function POST(req: NextRequest) {
     const customerHtml = getCustomerInvoiceHtml(savedOrder);
     const tailorHtml = getTailorInvoiceHtml(savedOrder);
     const adminHtml = getAdminInvoiceHtml(savedOrder);
-    const customerPdf = await generatePdf(customerHtml);
-    const tailorPdf = await generatePdf(tailorHtml);
-    const adminPdf = await generatePdf(adminHtml);
+    const [customerPdf, tailorPdf, adminPdf] = await Promise.all([
+      generatePdf(customerHtml),
+      generatePdf(tailorHtml),
+      generatePdf(adminHtml),
+    ]);
     // Helper to upload PDF buffer to Cloudinary
     async function uploadPdfToCloudinary(buffer, publicId, folder) {
       return new Promise((resolve, reject) => {
@@ -593,9 +597,11 @@ export async function POST(req: NextRequest) {
     }
     // Use date and orderId for folder structure
     const invoiceFolder = `invoices/${dateFolder}/${savedOrder.oid}`;
-    const customerUpload = await uploadPdfToCloudinary(customerPdf, 'customer', invoiceFolder);
-    const tailorUpload = await uploadPdfToCloudinary(tailorPdf, 'tailor', invoiceFolder);
-    const adminUpload = await uploadPdfToCloudinary(adminPdf, 'admin', invoiceFolder);
+    const [customerUpload, tailorUpload, adminUpload] = await Promise.all([
+      uploadPdfToCloudinary(customerPdf, 'customer', invoiceFolder),
+      uploadPdfToCloudinary(tailorPdf, 'tailor', invoiceFolder),
+      uploadPdfToCloudinary(adminPdf, 'admin', invoiceFolder),
+    ]);
     // Save URLs to order
     await db.collection("orders").updateOne(
       { _id: savedOrder._id },
@@ -611,15 +617,53 @@ export async function POST(req: NextRequest) {
     );
     // Fetch updated order
     const updatedOrder = await db.collection("orders").findOne({ _id: savedOrder._id });
+
+    // --- Automatically send WhatsApp message ---
+    try {
+      const params = [
+        updatedOrder.fullName || "",
+        updatedOrder.oid || "",
+        updatedOrder.orderDate || "",
+        (updatedOrder.garments || []).map((g) => g.order?.orderType).join(", ") || "",
+        updatedOrder.totalAmount || "",
+        updatedOrder.deliveryDate || "",
+        updatedOrder.invoiceLinks?.customer || ""
+      ];
+      const waUrl = "https://graph.facebook.com/v22.0/703783789484730/messages";
+      const waToken = process.env.WHATSAPP_TOKEN;
+      const waPayload = {
+        messaging_product: "whatsapp",
+        to: updatedOrder.contactNumber,
+        type: "template",
+        template: {
+          name: "order_invoice",
+          language: { code: "en_US" },
+          components: [
+            {
+              type: "body",
+              parameters: params.map((text) => ({ type: "text", text })),
+            },
+          ],
+        },
+      };
+      const waRes = await fetch(waUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${waToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(waPayload),
+      });
+      const waData = await waRes.json();
+      // Optionally log or handle waData
+    } catch (err) {
+      console.error("Failed to send WhatsApp message:", err);
+    }
+
     console.log('Returning response:', { success: true, oid, orderDate: formattedDate, order: updatedOrder });
     return NextResponse.json({ success: true, oid, orderDate: formattedDate, order: updatedOrder });
   } catch (error) {
     console.error("Order API error:", error);
-    let message = "Unknown error";
-    if (typeof error === "string") message = error;
-    else if (error instanceof Error) message = error.message;
-    else if (error && typeof error === "object" && "message" in error) message = error.message;
-    else message = JSON.stringify(error);
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error?.toString() }, { status: 500 });
   }
 } 

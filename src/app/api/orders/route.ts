@@ -568,22 +568,31 @@ export async function POST(req: NextRequest) {
     const savedOrder = await db.collection("orders").findOne({ _id: insertResult.insertedId });
 
     // --- PDF Generation and Cloudinary Upload ---
+    console.log("Starting PDF generation...");
     const customerHtml = getCustomerInvoiceHtml(savedOrder);
     const tailorHtml = getTailorInvoiceHtml(savedOrder);
     const adminHtml = getAdminInvoiceHtml(savedOrder);
+    
+    console.log("HTML generated, attempting PDF generation...");
     
     let customerPdf, tailorPdf, adminPdf;
     let pdfGenerationSuccess = false;
     
     try {
+      console.log("Calling generatePdf for all three PDFs...");
       [customerPdf, tailorPdf, adminPdf] = await Promise.all([
         generatePdf(customerHtml),
         generatePdf(tailorHtml),
         generatePdf(adminHtml),
       ]);
       pdfGenerationSuccess = true;
+      console.log("PDF generation successful!");
     } catch (pdfError) {
       console.error("PDF generation failed:", pdfError);
+      console.error("PDF error details:", {
+        message: pdfError.message,
+        stack: pdfError.stack
+      });
       // Continue with order submission even if PDF generation fails
       // PDFs will be null, but order will still be saved
     }
@@ -625,10 +634,13 @@ export async function POST(req: NextRequest) {
     
     if (pdfGenerationSuccess) {
       try {
+        // Define the folder for PDF uploads
+        const pdfFolder = `invoices/${dateFolder}/${savedOrder.oid}`;
+        
         [customerUpload, tailorUpload, adminUpload] = await Promise.all([
-          uploadPdfToCloudinary(customerPdf, "customer", folder),
-          uploadPdfToCloudinary(tailorPdf, "tailor", folder),
-          uploadPdfToCloudinary(adminPdf, "admin", folder),
+          uploadPdfToCloudinary(customerPdf, "customer", pdfFolder),
+          uploadPdfToCloudinary(tailorPdf, "tailor", pdfFolder),
+          uploadPdfToCloudinary(adminPdf, "admin", pdfFolder),
         ]);
       } catch (uploadError) {
         console.error("PDF upload to Cloudinary failed:", uploadError);
@@ -654,6 +666,23 @@ export async function POST(req: NextRequest) {
 
     // --- Automatically send WhatsApp message ---
     try {
+      console.log("Attempting to send WhatsApp message...");
+      
+      // Check if WhatsApp token is available
+      const waToken = process.env.WHATSAPP_ACCESS_TOKEN;
+      if (!waToken) {
+        console.error("WHATSAPP_ACCESS_TOKEN not found in environment variables");
+        throw new Error("WhatsApp token not configured");
+      }
+      
+      // Format phone number for WhatsApp (add 91 if not present)
+      let phoneNumber = updatedOrder.contactNumber;
+      if (!phoneNumber.startsWith('91')) {
+        phoneNumber = '91' + phoneNumber;
+      }
+      
+      console.log("Sending WhatsApp message to:", phoneNumber);
+      
       // Use invoice link if available, otherwise use a placeholder or the proxy URL
       const invoiceLink = updatedOrder.invoiceLinks?.customer || 
         `https://fashion-app-kappa.vercel.app/api/proxy-pdf?type=customer&oid=${updatedOrder.oid}`;
@@ -667,11 +696,13 @@ export async function POST(req: NextRequest) {
         updatedOrder.deliveryDate || "",
         invoiceLink
       ];
+      
+      console.log("WhatsApp template parameters:", params);
+      
       const waUrl = "https://graph.facebook.com/v22.0/703783789484730/messages";
-      const waToken = process.env.WHATSAPP_TOKEN;
       const waPayload = {
         messaging_product: "whatsapp",
-        to: updatedOrder.contactNumber,
+        to: phoneNumber,
         type: "template",
         template: {
           name: "order_invoice",
@@ -684,6 +715,9 @@ export async function POST(req: NextRequest) {
           ],
         },
       };
+      
+      console.log("WhatsApp payload:", JSON.stringify(waPayload, null, 2));
+      
       const waRes = await fetch(waUrl, {
         method: "POST",
         headers: {
@@ -692,8 +726,17 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify(waPayload),
       });
+      
       const waData = await waRes.json();
-      // Optionally log or handle waData
+      console.log("WhatsApp API response:", waData);
+      
+      if (!waRes.ok) {
+        console.error("WhatsApp API error:", waData);
+        throw new Error(`WhatsApp API error: ${waData.error?.message || 'Unknown error'}`);
+      }
+      
+      console.log("WhatsApp message sent successfully!");
+      
     } catch (err) {
       console.error("Failed to send WhatsApp message:", err);
     }

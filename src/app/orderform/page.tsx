@@ -1199,32 +1199,11 @@ export default function OrderFormPage() {
         setSubmittedOrder(result.order || null);
         setGarments([]); // clear cart after submit
         setStep(4); // Move to confirmation step after successful submission
-        // WhatsApp message sending
-        try {
-          const order = result.order;
-          const invoiceLink = `https://fashion-app-kappa.vercel.app/api/proxy-pdf?type=customer&oid=${order.oid}`;
-          const params = [
-            order.fullName || "",
-            order.oid || "",
-            order.orderDate || "",
-            (order.garments || [])
-              .map((g: any) => g.order?.orderType)
-              .join(", "),
-            order.totalAmount || "",
-            order.deliveryDate || "",
-            invoiceLink,
-          ];
-          fetch("/api/whatsapp", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              to: order.contactNumber, // must be in international format
-              params,
-            }),
-          });
-        } catch (err) {
-          console.error("Failed to send WhatsApp message:", err);
-        }
+        // WhatsApp message sending - This is now handled automatically in the backend
+        // The backend API (/api/orders) automatically sends WhatsApp message after order is saved
+        console.log(
+          "Order submitted successfully! WhatsApp message will be sent automatically."
+        );
         // Optionally reset form or redirect here
       } else {
         setSubmitError(result.error || "Failed to submit order.");
@@ -2744,9 +2723,13 @@ export default function OrderFormPage() {
                           );
                           if (!response.ok) {
                             if (response.status === 404) {
-                              alert("Invoice is being generated. Please try again in a few moments.");
+                              alert(
+                                "Invoice is being generated. Please try again in a few moments."
+                              );
                             } else {
-                              alert("Invoice not available yet. Please contact support if this issue persists.");
+                              alert(
+                                "Invoice not available yet. Please contact support if this issue persists."
+                              );
                             }
                             return;
                           }
@@ -2792,9 +2775,13 @@ export default function OrderFormPage() {
                           );
                           if (!response.ok) {
                             if (response.status === 404) {
-                              alert("Invoice is being generated. Please try again in a few moments.");
+                              alert(
+                                "Invoice is being generated. Please try again in a few moments."
+                              );
                             } else {
-                              alert("Invoice not available yet. Please contact support if this issue persists.");
+                              alert(
+                                "Invoice not available yet. Please contact support if this issue persists."
+                              );
                             }
                             return;
                           }
@@ -2840,9 +2827,13 @@ export default function OrderFormPage() {
                           );
                           if (!response.ok) {
                             if (response.status === 404) {
-                              alert("Invoice is being generated. Please try again in a few moments.");
+                              alert(
+                                "Invoice is being generated. Please try again in a few moments."
+                              );
                             } else {
-                              alert("Invoice not available yet. Please contact support if this issue persists.");
+                              alert(
+                                "Invoice not available yet. Please contact support if this issue persists."
+                              );
                             }
                             return;
                           }

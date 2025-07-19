@@ -602,26 +602,26 @@ export async function POST(req: NextRequest) {
       if (!buffer) return null;
       
       try {
-        const result = await cloudinary.uploader.upload_stream(
-          {
-            resource_type: "raw",
-            public_id: publicId,
-            folder: folder,
-            format: "pdf",
-          },
-          (error, result) => {
-            if (error) {
-              console.error("Cloudinary upload error:", error);
-            }
-          }
-        );
-        
-        const stream = Readable.from(buffer);
-        stream.pipe(result);
-        
         return new Promise((resolve, reject) => {
-          result.on("end", () => resolve(result));
-          result.on("error", reject);
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              resource_type: "raw",
+              public_id: publicId,
+              folder: folder,
+              format: "pdf",
+            },
+            (error, result) => {
+              if (error) {
+                console.error("Cloudinary upload error:", error);
+                reject(error);
+              } else {
+                resolve(result);
+              }
+            }
+          );
+          
+          // Write the buffer to the upload stream
+          uploadStream.end(buffer);
         });
       } catch (error) {
         console.error("Error uploading PDF to Cloudinary:", error);

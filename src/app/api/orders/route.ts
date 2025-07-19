@@ -571,55 +571,93 @@ export async function POST(req: NextRequest) {
     const customerHtml = getCustomerInvoiceHtml(savedOrder);
     const tailorHtml = getTailorInvoiceHtml(savedOrder);
     const adminHtml = getAdminInvoiceHtml(savedOrder);
-    const [customerPdf, tailorPdf, adminPdf] = await Promise.all([
-      generatePdf(customerHtml),
-      generatePdf(tailorHtml),
-      generatePdf(adminHtml),
-    ]);
+    
+    let customerPdf, tailorPdf, adminPdf;
+    let pdfGenerationSuccess = false;
+    
+    try {
+      [customerPdf, tailorPdf, adminPdf] = await Promise.all([
+        generatePdf(customerHtml),
+        generatePdf(tailorHtml),
+        generatePdf(adminHtml),
+      ]);
+      pdfGenerationSuccess = true;
+    } catch (pdfError) {
+      console.error("PDF generation failed:", pdfError);
+      // Continue with order submission even if PDF generation fails
+      // PDFs will be null, but order will still be saved
+    }
+
     // Helper to upload PDF buffer to Cloudinary
     async function uploadPdfToCloudinary(buffer, publicId, folder) {
-      return new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
+      if (!buffer) return null;
+      
+      try {
+        const result = await cloudinary.uploader.upload_stream(
           {
-            resource_type: 'raw', // Use 'raw' for PDFs
-            folder,
-            public_id: publicId, // Always just 'customer', 'tailor', 'admin'
-            format: 'pdf',
-            type: 'upload',
-            overwrite: true,
+            resource_type: "raw",
+            public_id: publicId,
+            folder: folder,
+            format: "pdf",
           },
           (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
+            if (error) {
+              console.error("Cloudinary upload error:", error);
+            }
           }
-        ).end(buffer);
-      });
-    }
-    // Use date and orderId for folder structure
-    const invoiceFolder = `invoices/${dateFolder}/${savedOrder.oid}`;
-    const [customerUpload, tailorUpload, adminUpload] = await Promise.all([
-      uploadPdfToCloudinary(customerPdf, 'customer', invoiceFolder),
-      uploadPdfToCloudinary(tailorPdf, 'tailor', invoiceFolder),
-      uploadPdfToCloudinary(adminPdf, 'admin', invoiceFolder),
-    ]);
-    // Save URLs to order
-    await db.collection("orders").updateOne(
-      { _id: savedOrder._id },
-      {
-        $set: {
-          invoiceLinks: {
-            customer: customerUpload.secure_url,
-            tailor: tailorUpload.secure_url,
-            admin: adminUpload.secure_url,
-          },
-        },
+        );
+        
+        const stream = Readable.from(buffer);
+        stream.pipe(result);
+        
+        return new Promise((resolve, reject) => {
+          result.on("end", () => resolve(result));
+          result.on("error", reject);
+        });
+      } catch (error) {
+        console.error("Error uploading PDF to Cloudinary:", error);
+        return null;
       }
-    );
+    }
+
+    // Upload PDFs to Cloudinary only if generation was successful
+    let customerUpload = null, tailorUpload = null, adminUpload = null;
+    
+    if (pdfGenerationSuccess) {
+      try {
+        [customerUpload, tailorUpload, adminUpload] = await Promise.all([
+          uploadPdfToCloudinary(customerPdf, "customer", folder),
+          uploadPdfToCloudinary(tailorPdf, "tailor", folder),
+          uploadPdfToCloudinary(adminPdf, "admin", folder),
+        ]);
+      } catch (uploadError) {
+        console.error("PDF upload to Cloudinary failed:", uploadError);
+        // Continue even if upload fails
+      }
+    }
+
+    // Save URLs to order (only if uploads were successful)
+    const invoiceLinks = {};
+    if (customerUpload?.secure_url) invoiceLinks.customer = customerUpload.secure_url;
+    if (tailorUpload?.secure_url) invoiceLinks.tailor = tailorUpload.secure_url;
+    if (adminUpload?.secure_url) invoiceLinks.admin = adminUpload.secure_url;
+    
+    if (Object.keys(invoiceLinks).length > 0) {
+      await db.collection("orders").updateOne(
+        { _id: savedOrder._id },
+        { $set: { invoiceLinks } }
+      );
+    }
+    
     // Fetch updated order
     const updatedOrder = await db.collection("orders").findOne({ _id: savedOrder._id });
 
     // --- Automatically send WhatsApp message ---
     try {
+      // Use invoice link if available, otherwise use a placeholder or the proxy URL
+      const invoiceLink = updatedOrder.invoiceLinks?.customer || 
+        `https://fashion-app-kappa.vercel.app/api/proxy-pdf?type=customer&oid=${updatedOrder.oid}`;
+      
       const params = [
         updatedOrder.fullName || "",
         updatedOrder.oid || "",
@@ -627,7 +665,7 @@ export async function POST(req: NextRequest) {
         (updatedOrder.garments || []).map((g) => g.order?.orderType).join(", ") || "",
         updatedOrder.totalAmount || "",
         updatedOrder.deliveryDate || "",
-        updatedOrder.invoiceLinks?.customer || ""
+        invoiceLink
       ];
       const waUrl = "https://graph.facebook.com/v22.0/703783789484730/messages";
       const waToken = process.env.WHATSAPP_TOKEN;

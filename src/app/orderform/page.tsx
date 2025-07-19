@@ -2743,7 +2743,11 @@ export default function OrderFormPage() {
                             `/api/proxy-pdf?type=customer&oid=${submittedOrder.oid}`
                           );
                           if (!response.ok) {
-                            alert("Invoice not available yet.");
+                            if (response.status === 404) {
+                              alert("Invoice is being generated. Please try again in a few moments.");
+                            } else {
+                              alert("Invoice not available yet. Please contact support if this issue persists.");
+                            }
                             return;
                           }
                           const blob = await response.blob();
@@ -2787,7 +2791,11 @@ export default function OrderFormPage() {
                             `/api/proxy-pdf?type=tailor&oid=${submittedOrder.oid}`
                           );
                           if (!response.ok) {
-                            alert("Invoice not available yet.");
+                            if (response.status === 404) {
+                              alert("Invoice is being generated. Please try again in a few moments.");
+                            } else {
+                              alert("Invoice not available yet. Please contact support if this issue persists.");
+                            }
                             return;
                           }
                           const blob = await response.blob();
@@ -2831,7 +2839,11 @@ export default function OrderFormPage() {
                             `/api/proxy-pdf?type=admin&oid=${submittedOrder.oid}`
                           );
                           if (!response.ok) {
-                            alert("Invoice not available yet.");
+                            if (response.status === 404) {
+                              alert("Invoice is being generated. Please try again in a few moments.");
+                            } else {
+                              alert("Invoice not available yet. Please contact support if this issue persists.");
+                            }
                             return;
                           }
                           const blob = await response.blob();

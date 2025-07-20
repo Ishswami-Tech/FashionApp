@@ -8,7 +8,17 @@ export async function generatePdf(html: string) {
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      executablePath = await chromium.executablePath();
+      // Check if we're in development and have a local Chrome path
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const localChromePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+      
+      if (isDevelopment && localChromePath) {
+        // Use local Chrome in development
+        executablePath = localChromePath;
+      } else {
+        // Use Chromium in production
+        executablePath = await chromium.executablePath();
+      }
       
       // Add a small delay between retries to allow file locks to clear
       if (attempt > 1) {
@@ -18,7 +28,7 @@ export async function generatePdf(html: string) {
       const browser = await puppeteer.launch({
         args: chromium.args,
         executablePath,
-        headless: "shell", // Use 'shell' for serverless environments
+        headless: isDevelopment ? true : "shell", // Use true for local development
       });
       
       const page = await browser.newPage();

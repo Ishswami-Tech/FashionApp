@@ -55,6 +55,11 @@ type Order = {
   preferredCommunication?: string;
   sameForWhatsapp?: boolean;
   garments?: Garment[];
+  invoiceLinks?: {
+    customer?: string;
+    tailor?: string;
+    admin?: string;
+  };
 };
 
 function getImageSrc(file: FileData | undefined): string {
@@ -199,6 +204,22 @@ const EyeIcon = () => (
       strokeLinejoin="round"
       strokeWidth={2}
       d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+    />
+  </svg>
+);
+
+const FileTextIcon = () => (
+  <svg
+    className="w-4 h-4"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
     />
   </svg>
 );
@@ -388,11 +409,40 @@ function OrderCard({
                       new Date(order.createdAt).toLocaleString()}
                   </p>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-blue-900">
-                    ₹{order.totalAmount}
+                <div className="flex items-center space-x-4">
+                  {/* PDF Viewing Buttons */}
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() =>
+                        window.open(
+                          `/api/proxy-pdf?type=customer&oid=${order.oid}`,
+                          "_blank"
+                        )
+                      }
+                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                    >
+                      <FileTextIcon />
+                      <span className="ml-1">Print Invoice</span>
+                    </button>
+                    <button
+                      onClick={() =>
+                        window.open(
+                          `/api/proxy-pdf?type=tailor&oid=${order.oid}`,
+                          "_blank"
+                        )
+                      }
+                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 border border-green-300 rounded-md hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+                    >
+                      <FileTextIcon />
+                      <span className="ml-1">Print Order</span>
+                    </button>
                   </div>
-                  <div className="text-sm text-blue-700">{order.payment}</div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-blue-900">
+                      ₹{order.totalAmount}
+                    </div>
+                    <div className="text-sm text-blue-700">{order.payment}</div>
+                  </div>
                 </div>
               </div>
             </div>

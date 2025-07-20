@@ -20,6 +20,37 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## PDF Generation Setup
+
+For PDF generation to work in local development, you need to set up Chrome/Chromium:
+
+### Windows Local Development
+1. Install Google Chrome if you haven't already
+2. Find your Chrome executable path (usually `C:\Program Files\Google\Chrome\Application\chrome.exe`)
+3. Set the environment variable:
+   ```bash
+   set PUPPETEER_EXECUTABLE_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe"
+   ```
+   Or add it to your `.env.local` file:
+   ```
+   PUPPETEER_EXECUTABLE_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe"
+   ```
+
+### macOS/Linux Local Development
+1. Install Google Chrome or Chromium
+2. Set the environment variable to your Chrome/Chromium path:
+   ```bash
+   export PUPPETEER_EXECUTABLE_PATH="/usr/bin/google-chrome"
+   ```
+
+### Production (Vercel)
+PDF generation works automatically in production using the `@sparticuz/chromium` package.
+
+### Testing PDF Generation
+After setting up the environment variables, you can test PDF generation by visiting:
+- Test PDF: `http://localhost:3000/api/test-pdf`
+- This will generate a simple test PDF to verify the setup is working correctly.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

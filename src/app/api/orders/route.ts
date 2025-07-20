@@ -7,6 +7,7 @@ import Busboy from "busboy";
 import { Readable } from "stream";
 import cloudinary from '@/lib/cloudinary';
 import { generatePdf } from '@/lib/pdf';
+import { getCustomerInvoiceHtml } from "@/templates/invoices/customerInvoiceHtml";
 
 export const config = {
   api: {
@@ -126,90 +127,6 @@ async function uploadBufferToCloudinary(buffer, filename, mimetype) {
 }
 
 // --- HTML template functions for invoices ---
-function getCustomerInvoiceHtml(order) {
-  // Use the HTML from printCustomerCopy, interpolate order fields
-  const customerData = order;
-  const garmentsData = order.garments || [];
-  const deliveryData = order;
-  const orderTotalAmount = order.totalAmount;
-  const currentDate = order.orderDate || new Date().toLocaleDateString();
-  return `<!DOCTYPE html>
-  <html>
-  <head>
-    <title>Customer Order Copy</title>
-    <style>
-      * {
-        -webkit-print-color-adjust: exact !important;
-        color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-      @media print {
-        @page { margin: 0.5in; size: A4; }
-        body { margin: 0; padding: 10px; font-family: Arial, sans-serif; font-size: 10px; line-height: 1.2; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; color: white !important; padding: 15px; text-align: center; margin-bottom: 15px; border-radius: 8px; }
-        .section { margin-bottom: 15px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafafa; }
-        .section-title { font-weight: bold; color: #333; margin-bottom: 8px; font-size: 12px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
-        table { width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 6px; }
-        th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
-        th { background: #f5f5f5; font-weight: bold; color: #333; }
-        .total-section { margin-top: 10px; border-top: 2px solid #333; padding-top: 8px; }
-        .total-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 10px; }
-        .final-total { font-weight: bold; font-size: 12px; color: #333; border-top: 1px solid #ddd; padding-top: 4px; }
-        .highlight { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 8px; margin-top: 8px; font-size: 10px; }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="header">
-      <h1 style="margin: 0; font-size: 16px;">📋 Your Order Confirmation With Sony Fashion </h1>
-      <p style="margin: 5px 0; font-size: 10px;">Order ID: ${order.oid}</p>
-      <p style="margin: 5px 0; font-size: 10px;">Date: ${currentDate}</p>
-    </div>
-    <div class="section">
-      <div class="section-title">👤 Customer Information</div>
-      <table>
-        <tr><th>Name</th><td>${customerData.fullName}</td></tr>
-        <tr><th>Phone</th><td>${customerData.contactNumber}</td></tr>
-        <tr><th>Email</th><td>${customerData.email}</td></tr>
-        <tr><th>Address</th><td>${customerData.fullAddress}</td></tr>
-      </table>
-    </div>
-    <div class="section">
-      <div class="section-title">👕 Order Summary</div>
-      <table>
-        <tr><th>Total Garments</th><td>${garmentsData.length}</td></tr>
-        <tr><th>Delivery Date</th><td>${deliveryData.deliveryDate || ''}</td></tr>
-        <tr><th>Payment Method</th><td>${deliveryData.payment}</td></tr>
-        <tr><th>Special Instructions</th><td>${deliveryData.specialInstructions || 'None'}</td></tr>
-      </table>
-    </div>
-    <div class="section">
-      <div class="section-title">💰 Order Summary & Payment</div>
-      <div class="total-section">
-        <div class="total-row final-total">
-          <span>Total Amount:</span>
-          <span>₹${orderTotalAmount}</span>
-        </div>
-      </div>
-      <div class="highlight">
-        <strong>Payment Method:</strong> ${deliveryData.payment}<br>
-        <strong>Payment Status:</strong> Pending
-      </div>
-    </div>
-    <div class="section">
-      <div class="section-title">📝 Order Notes</div>
-      <div class="highlight">
-        <p style="margin: 2px 0;"><strong>What you ordered:</strong></p>
-        <p style="margin: 2px 0;">• ${garmentsData.length} garment(s) with custom designs</p>
-        <p style="margin: 2px 0;">• Delivery on ${deliveryData.deliveryDate || ''}</p>
-        <p style="margin: 2px 0;">• Total amount: ₹${orderTotalAmount}</p>
-        <p style="margin: 2px 0;">• Payment method: ${deliveryData.payment}</p>
-      </div>
-    </div>
-  </body>
-  </html>`;
-}
-
 function getTailorInvoiceHtml(order) {
   const garmentsData = order.garments || [];
   const deliveryData = order;
@@ -302,138 +219,6 @@ function getTailorInvoiceHtml(order) {
               : "<div>No garment data</div>"}
           </div>
         </div>
-      </div>
-    </div>
-  </body>
-  </html>`;
-}
-
-function getAdminInvoiceHtml(order) {
-  const customerData = order;
-  const garmentsData = order.garments || [];
-  const deliveryData = order;
-  const orderTotalAmount = order.totalAmount;
-  const currentDate = order.orderDate || new Date().toLocaleDateString();
-  return `<!DOCTYPE html>
-  <html>
-  <head>
-    <title>Admin Order Copy</title>
-    <style>
-      * {
-        -webkit-print-color-adjust: exact !important;
-        color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-      @media print {
-        @page { margin: 0.5in; size: A4; }
-        body { margin: 0; padding: 10px; font-family: Arial, sans-serif; font-size: 10px; line-height: 1.2; }
-        .header { background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%) !important; color: white !important; padding: 15px; text-align: center; margin-bottom: 15px; }
-        .section { margin-bottom: 15px; page-break-inside: avoid; }
-        .section-title { background: #f8f9fa !important; padding: 8px; border-left: 4px solid #ff9800 !important; margin-bottom: 10px; font-weight: bold; font-size: 11px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9px; }
-        th, td { border: 1px solid #ddd !important; padding: 6px; text-align: left; }
-        th { background-color: #f8f9fa !important; font-weight: bold; }
-        .total-section { background: #fff3e0 !important; padding: 12px; border-radius: 4px; margin-top: 10px; }
-        .total-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 9px; }
-        .final-total { font-size: 12px; font-weight: bold; color: #d32f2f !important; }
-        .highlight { background: #fff3e0 !important; padding: 10px; border-radius: 4px; border-left: 4px solid #ff9800 !important; font-size: 9px; }
-        .design-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
-        .design-item { border: 1px solid #ddd !important; padding: 8px; border-radius: 4px; font-size: 9px; }
-      }
-      body { font-family: Arial, sans-serif; margin: 10px; font-size: 10px; line-height: 1.2; }
-      .header { background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); color: white; padding: 15px; text-align: center; margin-bottom: 15px; border-radius: 4px; }
-      .section { margin-bottom: 15px; }
-      .section-title { background: #f8f9fa; padding: 8px; border-left: 4px solid #ff9800; margin-bottom: 10px; font-weight: bold; font-size: 11px; }
-      table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9px; }
-      th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
-      th { background-color: #f8f9fa; font-weight: bold; }
-      .total-section { background: #fff3e0; padding: 12px; border-radius: 4px; margin-top: 10px; }
-      .total-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 9px; }
-      .final-total { font-size: 12px; font-weight: bold; color: #d32f2f; }
-      .highlight { background: #fff3e0; padding: 10px; border-radius: 4px; border-left: 4px solid #ff9800; font-size: 9px; }
-      .design-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
-      .design-item { border: 1px solid #ddd; padding: 8px; border-radius: 4px; font-size: 9px; }
-    </style>
-  </head>
-  <body>
-    <div class="header">
-      <h1 style="margin: 0; font-size: 16px;">📊 Admin Order Copy</h1>
-      <p style="margin: 5px 0; font-size: 10px;">Order ID: ${order.oid}</p>
-      <p style="margin: 5px 0; font-size: 10px;">Date: ${currentDate}</p>
-    </div>
-    <div class="section">
-      <div class="section-title">👤 Customer Information</div>
-      <table>
-        <tr><th>Name</th><td>${customerData.fullName}</td></tr>
-        <tr><th>Phone</th><td>${customerData.contactNumber}</td></tr>
-        <tr><th>Email</th><td>${customerData.email}</td></tr>
-        <tr><th>Address</th><td>${customerData.fullAddress}</td></tr>
-      </table>
-    </div>
-    <div class="section">
-      <div class="section-title">👕 Order Details</div>
-      <table>
-        <tr><th>Total Garments</th><td>${garmentsData.length}</td></tr>
-        <tr><th>Delivery Date</th><td>${deliveryData.deliveryDate || ''}</td></tr>
-        <tr><th>Payment Method</th><td>${deliveryData.payment}</td></tr>
-        <tr><th>Special Instructions</th><td>${deliveryData.specialInstructions || 'None'}</td></tr>
-      </table>
-    </div>
-    <div class="section">
-      <div class="section-title">🎨 Design References</div>
-      <div class="design-grid">
-        ${garmentsData
-          .map((garment, garmentIdx) =>
-            garment.designs && Array.isArray(garment.designs)
-              ? garment.designs
-                  .map(
-                    (design, designIdx) => `
-              <div class="design-item">
-                <p style="margin: 2px 0;"><strong>${garment.order?.orderType} - ${garment.variant}</strong></p>
-                <p style="margin: 2px 0;"><strong>Design ${designIdx + 1}:</strong> ${design.name || `Design ${designIdx + 1}`}</p>
-                <p style="margin: 2px 0;">${design.designDescription || "Custom design"}</p>
-                <p style="margin: 2px 0;"><strong>Amount:</strong> ₹${design.amount}</p>
-              </div>
-            `)
-                  .join("")
-              : ""
-          )
-          .join("")}
-      </div>
-    </div>
-    <div class="section">
-      <div class="section-title">💰 Pricing Breakdown</div>
-      <div class="total-section">
-        <div class="total-row final-total">
-          <span>Total Amount:</span>
-          <span>₹${orderTotalAmount}</span>
-        </div>
-      </div>
-    </div>
-    <div class="section">
-      <div class="section-title">💳 Payment Information</div>
-      <table>
-        <tr><th>Payment Method</th><td>${deliveryData.payment}</td></tr>
-        <tr><th>Payment Status</th><td>Pending</td></tr>
-        <tr><th>Order Status</th><td>Confirmed</td></tr>
-      </table>
-    </div>
-    <div class="section">
-      <div class="section-title">🚚 Delivery Information</div>
-      <table>
-        <tr><th>Delivery Date</th><td>${deliveryData.deliveryDate || ''}</td></tr>
-      </table>
-    </div>
-    <div class="section">
-      <div class="section-title">📈 Business Summary</div>
-      <div class="highlight">
-        <p style="margin: 2px 0;"><strong>Order Summary:</strong></p>
-        <p style="margin: 2px 0;">• Customer: ${customerData.fullName} (${customerData.contactNumber})</p>
-        <p style="margin: 2px 0;">• Total Garments: ${garmentsData.length}</p>
-        <p style="margin: 2px 0;">• Revenue: ₹${orderTotalAmount}</p>
-        <p style="margin: 2px 0;">• Payment: ${deliveryData.payment}</p>
-        <p style="margin: 2px 0;">• Delivery: ${deliveryData.deliveryDate || ''}</p>
-        <p style="margin: 2px 0;">• Order ID: ${order.oid}</p>
       </div>
     </div>
   </body>
@@ -570,14 +355,12 @@ export async function POST(req: NextRequest) {
     // --- PDF Generation and Cloudinary Upload ---
     const customerHtml = getCustomerInvoiceHtml(savedOrder);
     const tailorHtml = getTailorInvoiceHtml(savedOrder);
-    const adminHtml = getAdminInvoiceHtml(savedOrder);
-    let customerPdf, tailorPdf, adminPdf;
+    let customerPdf, tailorPdf;
     let pdfGenerationSuccess = false;
     try {
-      [customerPdf, tailorPdf, adminPdf] = await Promise.all([
+      [customerPdf, tailorPdf] = await Promise.all([
         generatePdf(customerHtml),
         generatePdf(tailorHtml),
-        generatePdf(adminHtml),
       ]);
       pdfGenerationSuccess = true;
     } catch (pdfError) {
@@ -586,7 +369,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Upload PDFs to Cloudinary only if generation was successful
-    let customerUpload = null, tailorUpload = null, adminUpload = null;
+    let customerUpload = null, tailorUpload = null;
     if (pdfGenerationSuccess) {
       try {
         const dateFolder = formattedDate.replace(/\//g, '-');
@@ -614,17 +397,6 @@ export async function POST(req: NextRequest) {
           ).end(tailorPdf);
         });
         
-        // Upload admin PDF
-        adminUpload = await new Promise((resolve, reject) => {
-          cloudinary.uploader.upload_stream(
-            { resource_type: 'raw', public_id: 'admin', folder, format: 'pdf' },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          ).end(adminPdf);
-        });
-        
         console.log("PDFs uploaded successfully to Cloudinary");
       } catch (uploadError) {
         console.error("PDF upload to Cloudinary failed:", uploadError);
@@ -636,7 +408,6 @@ export async function POST(req: NextRequest) {
     const invoiceLinks = {};
     if (customerUpload?.secure_url) invoiceLinks.customer = customerUpload.secure_url;
     if (tailorUpload?.secure_url) invoiceLinks.tailor = tailorUpload.secure_url;
-    if (adminUpload?.secure_url) invoiceLinks.admin = adminUpload.secure_url;
     if (Object.keys(invoiceLinks).length > 0) {
       await db.collection("orders").updateOne(
         { _id: savedOrder._id },

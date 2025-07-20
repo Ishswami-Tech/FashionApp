@@ -346,7 +346,7 @@ function OrderCard({
                 </div>
                 <div className="flex items-center space-x-1">
                   <CalendarIcon />
-                  <span>{order.orderDate}</span>
+                  <span>{formatDisplayDate(order.orderDate)}</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <PackageIcon />
@@ -404,9 +404,7 @@ function OrderCard({
                     Order ID: {order.oid}
                   </h4>
                   <p className="text-sm text-blue-700">
-                    Created:{" "}
-                    {order.createdAt &&
-                      new Date(order.createdAt).toLocaleString()}
+                    Created: {formatDisplayDate(order.createdAt)}
                   </p>
                 </div>
                 <div className="flex items-center space-x-4">
@@ -434,7 +432,7 @@ function OrderCard({
                       className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 border border-green-300 rounded-md hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
                     >
                       <FileTextIcon />
-                      <span className="ml-1">Print Order</span>
+                      <span className="ml-1">Print Tailor</span>
                     </button>
                   </div>
                   <div className="text-right">
@@ -489,7 +487,7 @@ function OrderCard({
                       Delivery Date:
                     </span>
                     <span className="text-sm font-medium">
-                      {order.deliveryDate}
+                      {formatDisplayDate(order.deliveryDate)}
                     </span>
                   </div>
 
@@ -860,6 +858,17 @@ function Pagination({
       </button>
     </div>
   );
+}
+
+function formatDisplayDate(dateStr?: string) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 export default function AdminOrdersPage() {

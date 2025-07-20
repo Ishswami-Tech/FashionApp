@@ -1,6 +1,13 @@
 // Shared enhanced tailor invoice HTML template for Sony Fashion
 // This function is used by both order creation and PDF generation endpoints
 
+function formatDisplayDate(dateStr: string | undefined) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
 export function getTailorInvoiceHtml(order: any) {
   const garmentsData = order.garments || [];
   const deliveryData = order;
@@ -51,7 +58,7 @@ export function getTailorInvoiceHtml(order: any) {
 </head>
 <body>
   <div class="main-container">
-    <div class="order-id">Order ID: ${orderIdValue}</div>
+    <div class="order-id" style="font-size:20px;font-weight:bold;">Order ID: ${orderIdValue}</div>
     <div class="two-col">
       <div>
         <div class="section-title">Measurements</div>
@@ -75,7 +82,7 @@ export function getTailorInvoiceHtml(order: any) {
         <div class="right-col-section">
           <div class="section-title">Delivery Details</div>
           <table>
-            <tr><th>Delivery Date</th><td>${deliveryData.deliveryDate || ''}</td></tr>
+            <tr><th>Delivery Date</th><td>${formatDisplayDate(deliveryData.deliveryDate)}</td></tr>
           </table>
         </div>
         <div class="work-instructions">

@@ -33,7 +33,7 @@ function getTodayOrderId(date: Date) {
   if (!orderSequence[key]) orderSequence[key] = 1;
   else orderSequence[key]++;
   const seq = String(orderSequence[key]).padStart(3, '0');
-  return `${yyyy}-${mm}-${dd}-${seq}`;
+  return `${yyyy}${mm}${dd}${seq}`;
 }
 
 // Parse multipart form data using busboy

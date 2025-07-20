@@ -122,6 +122,18 @@ type OrderDetails = z.infer<typeof orderDetailsSchema>;
 type MeasurementDesign = z.infer<typeof measurementSchema>;
 type DeliveryPayment = z.infer<typeof deliverySchema>;
 
+// Add this helper function near the top:
+function formatDisplayDate(dateStr?: string) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
 export default function OrderFormPage() {
   const [step, setStep] = useState(1);
   const [customerData, setCustomerData] = useState<CustomerInfo | null>(null);
@@ -275,7 +287,9 @@ export default function OrderFormPage() {
           <p style="margin: 5px 0; font-size: 10px;">Order ID: ${
             orderId || submittedOrder?.oid
           }</p>
-          <p style="margin: 5px 0; font-size: 10px;">Date: ${currentDate}</p>
+          <p style="margin: 5px 0; font-size: 10px;">Date: ${formatDisplayDate(
+            currentDate
+          )}</p>
         </div>
 
         <div class="section">
@@ -292,10 +306,10 @@ export default function OrderFormPage() {
           <div class="section-title">👕 Order Summary</div>
           <table>
             <tr><th>Total Garments</th><td>${garmentsData.length}</td></tr>
-            <tr><th>Delivery Date</th><td>${
+            <tr><th>Delivery Date</th><td>${formatDisplayDate(
               deliveryData.deliveryDate?.toLocaleDateString?.() ||
-              String(deliveryData.deliveryDate)
-            }</td></tr>
+                String(deliveryData.deliveryDate)
+            )}</td></tr>
             <tr><th>Payment Method</th><td>${deliveryData.payment}</td></tr>
             <tr><th>Special Instructions</th><td>${
               deliveryData.specialInstructions || "None"
@@ -324,10 +338,10 @@ export default function OrderFormPage() {
             <p style="margin: 2px 0;">• ${
               garmentsData.length
             } garment(s) with custom designs</p>
-            <p style="margin: 2px 0;">• Delivery on ${
+            <p style="margin: 2px 0;">• Delivery on ${formatDisplayDate(
               deliveryData.deliveryDate?.toLocaleDateString?.() ||
-              String(deliveryData.deliveryDate)
-            }</p>
+                String(deliveryData.deliveryDate)
+            )}</p>
             <p style="margin: 2px 0;">• Total amount: ₹${orderTotalAmount}</p>
             <p style="margin: 2px 0;">• Payment method: ${
               deliveryData.payment
@@ -488,10 +502,10 @@ export default function OrderFormPage() {
                                 <div class="right-col-section">
                     <div class="section-title">Delivery Details</div>
                     <table>
-                      <tr><th>Delivery Date</th><td>${
+                      <tr><th>Delivery Date</th><td>${formatDisplayDate(
                         deliveryData.deliveryDate?.toLocaleDateString?.() ||
-                        String(deliveryData.deliveryDate)
-                      }</td></tr>
+                          String(deliveryData.deliveryDate)
+                      )}</td></tr>
                     </table>
                   </div>
               <div class="work-instructions">
@@ -509,10 +523,10 @@ export default function OrderFormPage() {
                   <div>• Special instructions: ${
                     deliveryData.specialInstructions || "None"
                   }</div>
-                  <div>• Complete by: ${
+                  <div>• Complete by: ${formatDisplayDate(
                     deliveryData.deliveryDate?.toLocaleDateString?.() ||
-                    String(deliveryData.deliveryDate)
-                  }</div>
+                      String(deliveryData.deliveryDate)
+                  )}</div>
                 `
                     : "<div>No garment data</div>"
                 }
@@ -1510,17 +1524,6 @@ export default function OrderFormPage() {
                 onSubmit={deliveryForm.handleSubmit(handleDeliverySubmit)}
                 className="space-y-8"
               >
-                {submitLoading && (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-lg font-semibold text-gray-700">
-                      Submitting your order...
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Please wait while we process your order.
-                    </p>
-                  </div>
-                )}
                 <div
                   className={
                     submitLoading ? "opacity-50 pointer-events-none" : ""
@@ -1720,6 +1723,17 @@ export default function OrderFormPage() {
                   >
                     {submitLoading ? "Submitting..." : "Submit Order"}
                   </Button>
+                  {submitLoading && (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                      <p className="text-lg font-semibold text-gray-700">
+                        Submitting your order...
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Please wait while we process your order.
+                      </p>
+                    </div>
+                  )}
                   {!deliveryForm.formState.isValid && (
                     <div className="text-red-600 text-sm mt-2">
                       Please fill in all required fields correctly.
@@ -1735,7 +1749,9 @@ export default function OrderFormPage() {
                         <span className="font-mono font-bold">{orderOid}</span>
                         <br />
                         Order Date:{" "}
-                        <span className="font-mono">{orderDate}</span>
+                        <span className="font-mono">
+                          {formatDisplayDate(orderDate)}
+                        </span>
                       </span>
                     )}
                   </div>
@@ -1888,7 +1904,10 @@ export default function OrderFormPage() {
                       {submittedOrder?.oid || orderOid}
                     </div>
                     <div className="text-xs text-green-600 mt-1">
-                      Order Date: {submittedOrder?.orderDate || orderDate}
+                      Order Date:{" "}
+                      {formatDisplayDate(
+                        submittedOrder?.orderDate || orderDate
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2228,11 +2247,13 @@ export default function OrderFormPage() {
                               Delivery Date:
                             </span>
                             <span className="font-semibold text-sm">
-                              {submittedOrder?.deliveryDate ||
-                                deliveryForm
-                                  .getValues()
-                                  .deliveryDate?.toLocaleDateString?.() ||
-                                String(deliveryForm.getValues().deliveryDate)}
+                              {formatDisplayDate(
+                                submittedOrder?.deliveryDate ||
+                                  deliveryForm
+                                    .getValues()
+                                    .deliveryDate?.toLocaleDateString?.() ||
+                                  String(deliveryForm.getValues().deliveryDate)
+                              )}
                             </span>
                           </div>
                         </div>
@@ -2538,7 +2559,7 @@ export default function OrderFormPage() {
                 </p>
                 <p className="text-xs text-gray-500 mt-2">
                   Order ID: {submittedOrder?.oid || orderOid} • Date:{" "}
-                  {submittedOrder?.orderDate || orderDate}
+                  {formatDisplayDate(submittedOrder?.orderDate || orderDate)}
                 </p>
               </div>
             </div>

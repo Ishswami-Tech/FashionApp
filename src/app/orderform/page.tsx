@@ -1954,22 +1954,18 @@ export default function OrderFormPage() {
 
               {/* SECTION 2: DESIGNS & MEASUREMENTS (Tailor Copy) */}
               <div className="print:break-after-page">
-                <div className="text-center mb-6 pb-4 border-b-2 border-purple-200">
+                {/* <div className="text-center mb-6 pb-4 border-b-2 border-purple-200">
                   <h2 className="text-2xl sm:text-3xl font-bold text-purple-900 mb-2">
                     Tailor Copy
                   </h2>
                   <p className="text-purple-600 mb-3">Designs & Measurements</p>
                   <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 inline-block">
-                    <div className="text-sm text-purple-700 mb-1">Order ID</div>
-                    <div className="text-xl sm:text-2xl font-mono font-bold text-purple-800">
-                      {submittedOrder?.oid || orderOid}
-                    </div>
                     <div className="text-xs text-purple-600 mt-1">
                       Customer:{" "}
                       {submittedOrder?.fullName || customerData?.fullName}
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Garments & Designs */}
                 <div className="mb-6">
@@ -2183,7 +2179,7 @@ export default function OrderFormPage() {
 
               {/* SECTION 3: PRICING & PAYMENT (Admin Copy) */}
               <div className="print:break-after-page">
-                <div className="text-center mb-6 pb-4 border-b-2 border-orange-200">
+                {/* <div className="text-center mb-6 pb-4 border-b-2 border-orange-200">
                   <h2 className="text-2xl sm:text-3xl font-bold text-orange-900 mb-2">
                     Admin Copy
                   </h2>
@@ -2200,7 +2196,7 @@ export default function OrderFormPage() {
                       {submittedOrder?.fullName || customerData?.fullName}
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Delivery & Payment */}
                 <div className="mb-6">

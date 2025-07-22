@@ -815,15 +815,17 @@ export default function OrderFormPage() {
               design.canvasImage.startsWith("data:image/")
             ) {
               const arr = design.canvasImage.split(",");
-              const mime = arr[0].match(/:(.*?);/)[1];
+              const mimeMatch = arr[0].match(/:(.*?);/);
+              const mime = mimeMatch ? mimeMatch[1] : "image/png";
               const bstr = atob(arr[1]);
               let n = bstr.length;
               const u8arr = new Uint8Array(n);
               while (n--) u8arr[n] = bstr.charCodeAt(n);
-              const file = new File([u8arr], `canvas_${idx}_${i}.png`, {
+              const file = new File([u8arr], `canvas_${idx}_${i}.png`, { 
                 type: mime,
+                lastModified: new Date().getTime()
               });
-              formData.append(`canvasImage_${idx}_${i}`, file);
+              formData.append(`canvasImage_${idx}_${i}`, file, file.name);
             }
             // Voice Note (file)
             if (design.voiceNote && design.voiceNote instanceof File) {
@@ -1140,113 +1142,123 @@ export default function OrderFormPage() {
                 className="space-y-5"
               >
                 {/* Order Details fields */}
-                <div className="flex flex-col sm:flex-row gap-4 gap-y-2">
-                  <FormField
-                    control={orderForm.control}
-                    name="orderType"
-                    render={({ field }) => (
-                      <FormItem className="flex-1 w-full">
-                        <FormLabel>Garment Category *</FormLabel>
+                <div className="space-y-4">
+                  <div className="flex flex-row flex-wrap self-center justify-start sm:flex-row gap-4 p-3">
+                    <FormField
+                      control={orderForm.control}
+                      name="orderType"
+                      render={({ field }) => (
+                        <FormItem className="flex-1 self-center">
+                          <FormLabel className="text-sm font-medium">Garment Category *</FormLabel>
+                          <FormControl>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
+                              <SelectTrigger className="">
+                                <SelectValue placeholder="Select garment category" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {garmentOptions.map(
+                                  (opt: { value: string; label: string }) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  )
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    {/* Variant Selection */}
+                    {garmentType && (
+                      <FormItem className="flex-1">
+                        <FormLabel className="text-sm font-medium">Variant *</FormLabel>
                         <FormControl>
                           <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
+                            onValueChange={setSelectedVariant}
+                            value={selectedVariant}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select garment category" />
+                            <SelectTrigger className="">
+                              <SelectValue placeholder="Select variant" />
                             </SelectTrigger>
                             <SelectContent>
-                              {garmentOptions.map(
-                                (opt: { value: string; label: string }) => (
-                                  <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </SelectItem>
-                                )
-                              )}
+                              {(() => {
+                                const form = measurementData.measurement_new.find(
+                                  (f: any) => f.category === garmentType
+                                );
+                                if (form && form.variants) {
+                                  return form.variants.map((variant: any) => (
+                                    <SelectItem
+                                      key={
+                                        typeof variant === "string"
+                                          ? variant
+                                          : variant.type
+                                      }
+                                      value={
+                                        typeof variant === "string"
+                                          ? variant
+                                          : variant.type
+                                      }
+                                    >
+                                      {typeof variant === "string"
+                                        ? variant
+                                        : variant.type}
+                                    </SelectItem>
+                                  ));
+                                }
+                                return [];
+                              })()}
                             </SelectContent>
                           </Select>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
+                    
+                    <FormField
+                    control={orderForm.control}
+                    name="quantity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Quantity *</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min={1}
+                              max={10}
+                              {...field}
+                              className="w-full max-w-[100px]"
+                            />
+                            <span className="text-sm text-gray-500 w-fit-content">
+                              (Max: 10)
+                            </span>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  {/* Variant Selection */}
-                  {garmentType && (
-                    <FormItem className="flex-1 w-full">
-                      <FormLabel>Variant *</FormLabel>
-                      <FormControl>
-                        <Select
-                          onValueChange={setSelectedVariant}
-                          value={selectedVariant}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select variant" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(() => {
-                              const form = measurementData.measurement_new.find(
-                                (f: any) => f.category === garmentType
-                              );
-                              if (form && form.variants) {
-                                return form.variants.map((variant: any) => (
-                                  <SelectItem
-                                    key={
-                                      typeof variant === "string"
-                                        ? variant
-                                        : variant.type
-                                    }
-                                    value={
-                                      typeof variant === "string"
-                                        ? variant
-                                        : variant.type
-                                    }
-                                  >
-                                    {typeof variant === "string"
-                                      ? variant
-                                      : variant.type}
-                                  </SelectItem>
-                                ));
-                              }
-                              return [];
-                            })()}
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  </div>
+                
                 </div>
-                <FormField
-                  control={orderForm.control}
-                  name="quantity"
-                  render={({ field }) => (
-                    <FormItem className="w-full">
-                      <FormLabel>Quantity *</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={10}
-                          {...field}
-                          className="w-full"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                {/* Measurements & Design fields (from previous step 3) */}
 
+                {/* Measurements & Design fields */}
                 {garmentType && (
-                  <div className="my-4">
-                    {/* Move Measurement Unit toggle below Quantity */}
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className="font-semibold">Measurement Unit:</span>
+                  <div className="mt-6 space-y-4">
+                    {/* Measurement Unit toggle */}
+                    <div className="flex flex-wrap items-center gap-2 p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                      <span className="font-medium text-sm text-gray-700">Measurement Unit:</span>
                       <Button
                         type="button"
                         size="sm"
                         variant={unit === "in" ? "default" : "outline"}
                         onClick={() => handleUnitToggle("in")}
+                        className="h-8 px-3"
                       >
                         Inches
                       </Button>
@@ -1255,29 +1267,30 @@ export default function OrderFormPage() {
                         size="sm"
                         variant={unit === "cm" ? "default" : "outline"}
                         onClick={() => handleUnitToggle("cm")}
+                        className="h-8 px-3"
                       >
                         Centimeters
                       </Button>
                     </div>
+
+                    {/* Measurement Fields */}
                     {measurementFields.length === 0 ? (
-                      <div className="text-gray-500 italic">
+                      <div className="text-gray-500 italic p-3 sm:p-4 bg-white border border-gray-200 rounded-lg">
                         No measurements required for this garment type.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 bg-white border border-gray-200 rounded-lg">
                         {measurementFields.map((fieldKey: string) => (
                           <FormField
                             key={fieldKey}
                             control={measurementForm.control}
                             name={`measurements.${fieldKey}`}
                             render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-sm">
+                              <FormItem className="gap-1">
+                                <FormLabel className="text-sm font-medium text-gray-700">
                                   {fieldKey
                                     .replace(/([A-Z])/g, " $1")
-                                    .replace(/^./, (s: string) =>
-                                      s.toUpperCase()
-                                    )}
+                                    .replace(/^./, (s: string) => s.toUpperCase())}
                                 </FormLabel>
                                 <FormControl>
                                   <div className="flex items-center gap-2">
@@ -1286,15 +1299,10 @@ export default function OrderFormPage() {
                                       step="0.01"
                                       min="0"
                                       {...field}
-                                      value={
-                                        field.value === undefined ||
-                                        field.value === null
-                                          ? ""
-                                          : field.value
-                                      }
-                                      className="w-full px-2 py-1 text-base rounded"
+                                      value={field.value === undefined || field.value === null ? "" : field.value}
+                                      className="w-full border border-gray-200 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                     />
-                                    <span className="text-xs text-gray-500">
+                                    <span className="text-xs font-medium text-gray-500 w-6">
                                       {unit}
                                     </span>
                                   </div>
@@ -1310,8 +1318,8 @@ export default function OrderFormPage() {
                 )}
                 {/* Design Section - Always show when garment type is selected */}
                 {garmentType && (
-                  <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center mb-4">
+                  <div className="mt-4 border border-purple-200 rounded-lg">
+                    <div className="flex items-center p-3 bg-gradient-to-r from-purple-50 to-blue-50 border-b border-purple-200">
                       <svg
                         className="w-5 h-5 mr-2 text-purple-600"
                         fill="none"
@@ -1329,17 +1337,16 @@ export default function OrderFormPage() {
                         Designs for Each Item
                       </h3>
                     </div>
-                    <p className="text-sm text-purple-700 mb-4">
+                    <p className="text-sm text-purple-700 p-3 bg-purple-50/50">
                       Create {quantity} design{quantity > 1 ? "s" : ""} for your{" "}
-                      {garmentType.toLowerCase()}. Each design can have its own
-                      name, reference images, description, and price.
+                      {garmentType.toLowerCase()}. Each design can have its own name, reference images, description, and price.
                     </p>
                     {designs.map((d, idx) => (
                       <div
                         key={idx}
-                        className="mb-6 p-4 border border-purple-200 rounded-lg bg-white shadow-sm"
+                        className="p-3 border-t border-purple-200"
                       >
-                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-purple-100">
+                        <div className="flex items-center justify-between mb-3">
                           <h4 className="font-semibold text-purple-900">
                             Design #{idx + 1}
                           </h4>
@@ -1347,7 +1354,7 @@ export default function OrderFormPage() {
                             Item {idx + 1} of {quantity}
                           </span>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
                             <label className="block font-medium mb-1 text-sm text-gray-700">
                               Design Name *
@@ -1387,7 +1394,7 @@ export default function OrderFormPage() {
                             />
                           </div>
                         </div>
-                        <div className="mt-4">
+                        <div className="mt-3">
                           <label className="block font-medium mb-1 text-sm text-gray-700">
                             Design Reference Images
                           </label>
@@ -1409,7 +1416,7 @@ export default function OrderFormPage() {
                             Upload reference images for this design (optional)
                           </p>
                         </div>
-                        <div className="mt-4">
+                        <div className="mt-3">
                           <label className="block font-medium mb-1 text-sm text-gray-700">
                             Design Description
                           </label>
@@ -1426,11 +1433,11 @@ export default function OrderFormPage() {
                             rows={3}
                           />
                         </div>
-                        <div className="mt-4">
+                        <div className="mt-3">
                           <label className="block font-medium mb-1 text-sm text-gray-700">
                             Custom Drawing
                           </label>
-                          <div className="border border-gray-200 rounded-lg p-2">
+                          <div className="border border-gray-200 rounded-lg">
                             <CanvasPaint
                               onSave={(data) => {
                                 setDesigns((prev) => {
@@ -1442,14 +1449,13 @@ export default function OrderFormPage() {
                               }}
                               initialData={designs[idx].canvasJson}
                             />
-                            <p className="text-xs text-gray-500 mt-2">
-                              Draw or annotate your design here. Click Save to
-                              attach it to this design.
+                            <p className="text-xs text-gray-500 mt-1 p-2">
+                              Draw or annotate your design here. Click Save to attach it to this design.
                             </p>
                           </div>
                         </div>
                         {designs[idx].canvasImage && (
-                          <div className="mt-3">
+                          <div className="mt-2">
                             <label className="block text-xs text-gray-500 mb-1">
                               Saved Drawing Preview:
                             </label>
@@ -1492,30 +1498,73 @@ export default function OrderFormPage() {
             </Form>
           )}
           {step === 2 && !showGarmentForm && (
-            <div className="flex flex-col sm:flex-row gap-3 justify-end mt-2 w-full">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  orderForm.reset();
-                  measurementForm.reset();
-                  setSelectedVariant(undefined);
-                  setEditingIndex(null);
-                  setShowGarmentForm(true);
-                }}
-                className="w-full sm:w-auto px-6 py-2 rounded-lg font-semibold"
-              >
-                Add Another Garment
-              </Button>
-              <Button
-                type="button"
-                variant="default"
-                onClick={() => setStep(3)}
-                disabled={garments.length === 0}
-                className="w-full sm:w-auto px-6 py-2 rounded-lg font-semibold shadow-md"
-              >
-                Continue
-              </Button>
+            <div className="flex flex-col gap-3 w-full mt-4">
+              <div ref={garmentsSummaryRef} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-4">Garments in Order</h3>
+                {garments.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No garments added yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {garments.map((g, idx) => (
+                      <div key={idx} className="bg-white border border-gray-200 rounded-lg p-3">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                          <div>
+                            <h4 className="font-medium">{g.order.orderType}</h4>
+                            <p className="text-sm text-gray-600">
+                              Qty: {g.order.quantity} • Variant: {g.variant}
+                            </p>
+                          </div>
+                          <div className="flex gap-2 w-full sm:w-auto">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 sm:flex-none"
+                              onClick={() => handleEditGarment(idx)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="flex-1 sm:flex-none"
+                              onClick={() => handleRemoveGarment(idx)}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    orderForm.reset();
+                    measurementForm.reset();
+                    setSelectedVariant(undefined);
+                    setEditingIndex(null);
+                    setShowGarmentForm(true);
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  Add Another Garment
+                </Button>
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={() => setStep(3)}
+                  disabled={garments.length === 0}
+                  className="w-full sm:w-auto"
+                >
+                  Continue
+                </Button>
+              </div>
             </div>
           )}
           {step === 3 && (
@@ -1530,62 +1579,57 @@ export default function OrderFormPage() {
                   }
                 >
                   {/* Order Summary Card */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-6">
-                    <h3 className="text-lg font-bold mb-4 text-gray-800">
-                      Order Summary
-                    </h3>
-                    <Table className="mb-0 rounded overflow-hidden">
-                      <TableHeader>
-                        <TableRow className="bg-gray-100">
-                          <TableHead className="font-bold">
-                            Garment Type
-                          </TableHead>
-                          <TableHead className="font-bold">Variant</TableHead>
-                          <TableHead className="font-bold">Design #</TableHead>
-                          <TableHead className="font-bold">
-                            Amount (₹)
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {garments.map((g, idx) =>
-                          g.designs &&
-                          Array.isArray(g.designs) &&
-                          g.designs.length > 0 ? (
-                            g.designs.map((design: any, i: number) => (
-                              <TableRow key={`${idx}-${i}`}>
-                                <TableCell>{g.order.orderType}</TableCell>
-                                <TableCell>{g.variant}</TableCell>
-                                <TableCell>
-                                  {design.name || `Design ${i + 1}`}
-                                </TableCell>
-                                <TableCell>₹{design.amount}</TableCell>
-                              </TableRow>
-                            ))
-                          ) : (
-                            <TableRow key={idx}>
-                              <TableCell>{g.order.orderType}</TableCell>
-                              <TableCell>{g.variant}</TableCell>
-                              <TableCell>-</TableCell>
-                              <TableCell>₹0</TableCell>
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-5 mb-6">
+                    <h3 className="text-lg font-bold mb-4 text-gray-800">Order Summary</h3>
+                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                      <div className="inline-block min-w-full align-middle">
+                        <Table className="min-w-full">
+                          <TableHeader>
+                            <TableRow className="bg-gray-100">
+                              <TableHead className="font-bold whitespace-nowrap">Garment Type</TableHead>
+                              <TableHead className="font-bold whitespace-nowrap">Variant</TableHead>
+                              <TableHead className="font-bold whitespace-nowrap">Design #</TableHead>
+                              <TableHead className="font-bold text-right whitespace-nowrap">Amount (₹)</TableHead>
                             </TableRow>
-                          )
-                        )}
-                      </TableBody>
-                      <TableFooter>
-                        <TableRow>
-                          <TableCell
-                            colSpan={3}
-                            className="font-bold text-right"
-                          >
-                            Total Amount
-                          </TableCell>
-                          <TableCell className="font-bold">
-                            ₹{totalAmount.toFixed(2)}
-                          </TableCell>
-                        </TableRow>
-                      </TableFooter>
-                    </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {garments.map((g, idx) =>
+                              g.designs &&
+                              Array.isArray(g.designs) &&
+                              g.designs.length > 0 ? (
+                                g.designs.map((design: any, i: number) => (
+                                  <TableRow key={`${idx}-${i}`}>
+                                    <TableCell className="whitespace-nowrap">{g.order.orderType}</TableCell>
+                                    <TableCell className="whitespace-nowrap">{g.variant}</TableCell>
+                                    <TableCell className="whitespace-nowrap">
+                                      {design.name || `Design ${i + 1}`}
+                                    </TableCell>
+                                    <TableCell className="text-right whitespace-nowrap">₹{design.amount}</TableCell>
+                                  </TableRow>
+                                ))
+                              ) : (
+                                <TableRow key={idx}>
+                                  <TableCell className="whitespace-nowrap">{g.order.orderType}</TableCell>
+                                  <TableCell className="whitespace-nowrap">{g.variant}</TableCell>
+                                  <TableCell className="whitespace-nowrap">-</TableCell>
+                                  <TableCell className="text-right whitespace-nowrap">₹0</TableCell>
+                                </TableRow>
+                              )
+                            )}
+                          </TableBody>
+                          <TableFooter>
+                            <TableRow>
+                              <TableCell colSpan={3} className="font-bold text-right whitespace-nowrap">
+                                Total Amount
+                              </TableCell>
+                              <TableCell className="font-bold text-right whitespace-nowrap">
+                                ₹{totalAmount.toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          </TableFooter>
+                        </Table>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Payment Details Card */}
@@ -2566,7 +2610,7 @@ export default function OrderFormPage() {
           )}
         </CardContent>
       </Card>
-      {garments.length > 0 && (
+      {/* {garments.length > 0 && (
         <div
           ref={garmentsSummaryRef}
           className="my-4 p-4 bg-slate-50 border rounded w-full max-w-xl overflow-x-auto"
@@ -2611,9 +2655,9 @@ export default function OrderFormPage() {
             ))}
           </ul>
         </div>
-      )}
+      )} */}
       {/* Add Garment/Continue buttons below garments summary */}
-      {garments.length > 0 && step === 2 ? (
+      {/* {garments.length > 0 && step === 2 ? (
         <div className="flex flex-col sm:flex-row gap-3 justify-end mt-2 w-full max-w-xl">
           <Button
             type="button"
@@ -2639,7 +2683,7 @@ export default function OrderFormPage() {
             Continue
           </Button>
         </div>
-      ) : null}
+      ) : null} */}
     </div>
   );
 }

@@ -7,20 +7,22 @@ const toolbarStyles = `
   display: flex;
   flex-wrap: wrap;
   gap: 0.5em;
-  margin-bottom: 0.75em;
+  margin-bottom: 0.5em;
   justify-content: center;
+  padding: 0.5em;
 }
 .canvas-toolbar-btn {
   background: #f3f4f6;
   border: 1px solid #d1d5db;
   color: #222;
   border-radius: 6px;
-  padding: 0.4em 1em;
+  padding: 0.3em 0.8em;
   font-weight: 500;
-  margin: 0 0.1em;
+  margin: 0;
   transition: background 0.2s, color 0.2s, border 0.2s;
   cursor: pointer;
   outline: none;
+  font-size: 0.9em;
 }
 .canvas-toolbar-btn.active,
 .canvas-toolbar-btn:focus {
@@ -46,7 +48,8 @@ interface CanvasPaintProps {
 }
 
 const MAX_CANVAS_WIDTH = 600;
-const CANVAS_HEIGHT = 400;
+const MIN_CANVAS_HEIGHT = 400;
+const MAX_CANVAS_HEIGHT = 600;
 
 export const CanvasPaint: React.FC<CanvasPaintProps> = ({
   onSave,
@@ -58,25 +61,29 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({
   const [brushColor, setBrushColor] = useState("#222");
   const [brushSize, setBrushSize] = useState(3);
   const [canvasWidth, setCanvasWidth] = useState(MAX_CANVAS_WIDTH);
+  const [canvasHeight, setCanvasHeight] = useState(MIN_CANVAS_HEIGHT);
   // Track tool: 'pen', 'eraser', 'draw', 'select'
   const [activeTool, setActiveTool] = useState<
     "pen" | "eraser" | "draw" | "select"
   >("pen");
 
-  // Responsive: set canvas width to container width (max 600px)
+  // Responsive: set canvas width and height to container width (max 600px)
   useEffect(() => {
-    function updateWidth() {
+    function updateDimensions() {
       if (containerRef.current) {
-        const width = Math.min(
-          containerRef.current.offsetWidth,
-          MAX_CANVAS_WIDTH
-        );
+        const width = Math.min(containerRef.current.offsetWidth, MAX_CANVAS_WIDTH);
         setCanvasWidth(width);
+        // For mobile, make height equal to width for a square canvas
+        if (window.innerWidth < 768) {
+          setCanvasHeight(width);
+        } else {
+          setCanvasHeight(MIN_CANVAS_HEIGHT);
+        }
       }
     }
-    updateWidth();
-    window.addEventListener("resize", updateWidth);
-    return () => window.removeEventListener("resize", updateWidth);
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
   useEffect(() => {
@@ -93,7 +100,7 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({
           activeTool === "pen" ||
           activeTool === "eraser",
         width: canvasWidth,
-        height: CANVAS_HEIGHT,
+        height: canvasHeight,
         backgroundColor: "#fff",
       });
       fabricRef.current = fabricCanvas;
@@ -122,7 +129,7 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({
         fabricRef.current.dispose();
       }
     };
-  }, [initialData, canvasWidth]);
+  }, [initialData, canvasWidth, canvasHeight]);
 
   // Update brush when color, size, or tool changes
   useEffect(() => {
@@ -168,19 +175,19 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({
 
   // Toolbar UI
   return (
-    <div className="w-full flex flex-col items-center">
+    <div className="w-full flex flex-col items-stretch">
       <style>{toolbarStyles}</style>
-      <div className="canvas-toolbar">
-        <label className="flex items-center gap-1">
+      <div className="canvas-toolbar bg-gray-50 border-b">
+        <label className="flex items-center gap-1 text-sm">
           Color:
           <input
             type="color"
             value={brushColor}
             onChange={(e) => setBrushColor(e.target.value)}
-            className="ml-1 border rounded"
+            className="w-8 h-8 p-0 border rounded"
           />
         </label>
-        <label className="flex items-center gap-1">
+        <label className="flex items-center gap-1 text-sm">
           Size:
           <input
             type="range"
@@ -188,7 +195,7 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({
             max={20}
             value={brushSize}
             onChange={(e) => setBrushSize(Number(e.target.value))}
-            className="ml-1"
+            className="w-20"
           />
           <span className="w-6 text-xs">{brushSize}</span>
         </label>
@@ -199,7 +206,7 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({
           }`}
           onClick={() => {
             setActiveTool("eraser");
-            setBrushColor("#fff"); // Eraser (white)
+            setBrushColor("#fff");
           }}
         >
           Eraser
@@ -211,7 +218,7 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({
           }`}
           onClick={() => {
             setActiveTool("pen");
-            setBrushColor("#222"); // Default pen color
+            setBrushColor("#222");
           }}
         >
           Pen
@@ -251,14 +258,19 @@ export const CanvasPaint: React.FC<CanvasPaintProps> = ({
       </div>
       <div
         ref={containerRef}
-        className="border rounded shadow-lg overflow-auto w-full"
-        style={{ maxWidth: MAX_CANVAS_WIDTH }}
+        className="w-full bg-white"
       >
         <canvas
           ref={canvasRef}
           width={canvasWidth}
-          height={CANVAS_HEIGHT}
-          style={{ width: "100%", height: "auto", display: "block" }}
+          height={canvasHeight}
+          style={{ 
+            width: "100%", 
+            height: "auto", 
+            display: "block", 
+            touchAction: "none",
+            maxHeight: "70vh" 
+          }}
         />
       </div>
     </div>

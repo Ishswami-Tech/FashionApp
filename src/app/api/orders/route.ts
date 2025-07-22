@@ -431,7 +431,7 @@ export async function POST(req: NextRequest) {
       }
       console.log("Sending WhatsApp message to:", phoneNumber);
       // Use proxy-pdf URL for WhatsApp invoice link
-      const invoiceLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://fashion-app-kappa.vercel.app'}/api/proxy-pdf?type=customer&oid=${updatedOrder.oid}`;
+      const invoiceLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://sonyfashion.in'}/api/proxy-pdf?type=customer&oid=${updatedOrder.oid}`;
       const params = [
         updatedOrder.fullName || "",
         updatedOrder.oid || "",

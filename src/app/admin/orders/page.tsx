@@ -316,13 +316,13 @@ function OrderCard({
   );
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 w-full">
       <button
-        className="w-full p-6 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl"
+        className="w-full p-4 sm:p-6 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl"
         onClick={onToggle}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-2">
+          <div className="flex items-center space-x-4 w-full min-w-0">
             <div className="flex-shrink-0">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">
@@ -331,18 +331,20 @@ function OrderCard({
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-2 mb-1">
-                <h3 className="text-lg font-semibold text-gray-900 truncate">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
+                <h3 className="text-lg font-semibold text-gray-900 truncate max-w-[120px] sm:max-w-none">
                   {order.fullName}
                 </h3>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                   {order.oid}
                 </span>
               </div>
-              <div className="flex items-center space-x-4 text-sm text-gray-500">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
                 <div className="flex items-center space-x-1">
                   <MailIcon />
-                  <span className="truncate">{order.email}</span>
+                  <span className="truncate max-w-[80px] sm:max-w-none">
+                    {order.email}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <CalendarIcon />
@@ -363,12 +365,14 @@ function OrderCard({
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="text-right">
-              <div className="text-sm font-medium text-gray-900">
+          <div className="flex flex-row sm:flex-col items-end sm:items-end space-x-2 sm:space-x-0 sm:space-y-1 w-full sm:w-auto mt-2 sm:mt-0">
+            <div className="text-right w-full sm:w-auto">
+              <div className="text-sm font-medium text-gray-900 whitespace-nowrap">
                 ₹{order.totalAmount}
               </div>
-              <div className="text-xs text-gray-500">{order.payment}</div>
+              <div className="text-xs text-gray-500 whitespace-nowrap">
+                {order.payment}
+              </div>
             </div>
             <div
               className={`transform transition-transform duration-200 ${
@@ -966,20 +970,20 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl w-full mx-auto px-2 sm:px-4 lg:px-8 py-6 sm:py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+            <div className="w-full">
+              <h1 className="text-3xl font-bold text-gray-900 break-words">
                 Order Management
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-600 mt-1 break-words">
                 Manage and track all customer orders (Recent 50 orders)
               </p>
             </div>
-            <div className="flex items-center space-x-3">
-              <div className="bg-white rounded-lg px-4 py-2 shadow-sm border border-gray-200">
+            <div className="flex items-center space-x-3 w-full sm:w-auto">
+              <div className="bg-white rounded-lg px-4 py-2 shadow-sm border border-gray-200 w-full sm:w-auto">
                 <span className="text-sm text-gray-600">Total Orders:</span>
                 <span className="ml-2 font-semibold text-gray-900">
                   {orders.length}
@@ -989,8 +993,8 @@ export default function AdminOrdersPage() {
           </div>
 
           {/* Search and Filter Bar */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex flex-col sm:flex-row gap-4 mb-6 w-full">
+            <div className="relative flex-1 max-w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <SearchIcon />
               </div>
@@ -999,10 +1003,10 @@ export default function AdminOrdersPage() {
                 value={search}
                 onChange={handleSearch}
                 placeholder="Search orders by name, email, phone, or order ID..."
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm"
               />
             </div>
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <FilterIcon />
               </div>
@@ -1010,7 +1014,7 @@ export default function AdminOrdersPage() {
                 type="date"
                 value={dateFilter}
                 onChange={handleDateFilter}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm"
                 placeholder="Filter by date"
                 aria-label="Filter orders by date"
               />
@@ -1018,7 +1022,7 @@ export default function AdminOrdersPage() {
           </div>
 
           {/* Results Summary */}
-          <div className="bg-white rounded-lg px-4 py-2 shadow-sm border border-gray-200 inline-block">
+          <div className="bg-white rounded-lg px-4 py-2 shadow-sm border border-gray-200 inline-block w-full sm:w-auto">
             <span className="text-sm text-gray-600">
               Showing {startIndex + 1}-
               {Math.min(endIndex, filteredOrders.length)} of{" "}
@@ -1028,7 +1032,7 @@ export default function AdminOrdersPage() {
         </div>
 
         {/* Orders List */}
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
           {currentOrders.length === 0 ? (
             <EmptyState />
           ) : (
@@ -1067,9 +1071,11 @@ export default function AdminOrdersPage() {
             <img
               src={modalImg.src}
               alt={modalImg.alt}
-              className="max-w-full max-h-[80vh] rounded-lg shadow-lg"
+              className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[80vh] rounded-lg shadow-lg object-contain mx-auto"
             />
-            <p className="mt-4 text-sm text-gray-600">{modalImg.alt}</p>
+            <p className="mt-4 text-sm text-gray-600 break-words">
+              {modalImg.alt}
+            </p>
           </div>
         )}
       </Modal>

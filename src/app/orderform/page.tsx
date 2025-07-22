@@ -821,9 +821,9 @@ export default function OrderFormPage() {
               let n = bstr.length;
               const u8arr = new Uint8Array(n);
               while (n--) u8arr[n] = bstr.charCodeAt(n);
-              const file = new File([u8arr], `canvas_${idx}_${i}.png`, { 
+              const file = new File([u8arr], `canvas_${idx}_${i}.png`, {
                 type: mime,
-                lastModified: new Date().getTime()
+                lastModified: new Date().getTime(),
               });
               formData.append(`canvasImage_${idx}_${i}`, file, file.name);
             }
@@ -1149,7 +1149,9 @@ export default function OrderFormPage() {
                       name="orderType"
                       render={({ field }) => (
                         <FormItem className="flex-1 self-center">
-                          <FormLabel className="text-sm font-medium">Garment Category *</FormLabel>
+                          <FormLabel className="text-sm font-medium">
+                            Garment Category *
+                          </FormLabel>
                           <FormControl>
                             <Select
                               onValueChange={field.onChange}
@@ -1161,7 +1163,10 @@ export default function OrderFormPage() {
                               <SelectContent>
                                 {garmentOptions.map(
                                   (opt: { value: string; label: string }) => (
-                                    <SelectItem key={opt.value} value={opt.value}>
+                                    <SelectItem
+                                      key={opt.value}
+                                      value={opt.value}
+                                    >
                                       {opt.label}
                                     </SelectItem>
                                   )
@@ -1176,7 +1181,9 @@ export default function OrderFormPage() {
                     {/* Variant Selection */}
                     {garmentType && (
                       <FormItem className="flex-1">
-                        <FormLabel className="text-sm font-medium">Variant *</FormLabel>
+                        <FormLabel className="text-sm font-medium">
+                          Variant *
+                        </FormLabel>
                         <FormControl>
                           <Select
                             onValueChange={setSelectedVariant}
@@ -1187,9 +1194,10 @@ export default function OrderFormPage() {
                             </SelectTrigger>
                             <SelectContent>
                               {(() => {
-                                const form = measurementData.measurement_new.find(
-                                  (f: any) => f.category === garmentType
-                                );
+                                const form =
+                                  measurementData.measurement_new.find(
+                                    (f: any) => f.category === garmentType
+                                  );
                                 if (form && form.variants) {
                                   return form.variants.map((variant: any) => (
                                     <SelectItem
@@ -1218,33 +1226,34 @@ export default function OrderFormPage() {
                         <FormMessage />
                       </FormItem>
                     )}
-                    
+
                     <FormField
-                    control={orderForm.control}
-                    name="quantity"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium">Quantity *</FormLabel>
-                        <FormControl>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              min={1}
-                              max={10}
-                              {...field}
-                              className="w-full max-w-[100px]"
-                            />
-                            <span className="text-sm text-gray-500 w-fit-content">
-                              (Max: 10)
-                            </span>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      control={orderForm.control}
+                      name="quantity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium">
+                            Quantity *
+                          </FormLabel>
+                          <FormControl>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                min={1}
+                                max={10}
+                                {...field}
+                                className="w-full max-w-[100px]"
+                              />
+                              <span className="text-sm text-gray-500 w-fit-content">
+                                (Max: 10)
+                              </span>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                
                 </div>
 
                 {/* Measurements & Design fields */}
@@ -1252,7 +1261,9 @@ export default function OrderFormPage() {
                   <div className="mt-6 space-y-4">
                     {/* Measurement Unit toggle */}
                     <div className="flex flex-wrap items-center gap-2 p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                      <span className="font-medium text-sm text-gray-700">Measurement Unit:</span>
+                      <span className="font-medium text-sm text-gray-700">
+                        Measurement Unit:
+                      </span>
                       <Button
                         type="button"
                         size="sm"
@@ -1290,7 +1301,9 @@ export default function OrderFormPage() {
                                 <FormLabel className="text-sm font-medium text-gray-700">
                                   {fieldKey
                                     .replace(/([A-Z])/g, " $1")
-                                    .replace(/^./, (s: string) => s.toUpperCase())}
+                                    .replace(/^./, (s: string) =>
+                                      s.toUpperCase()
+                                    )}
                                 </FormLabel>
                                 <FormControl>
                                   <div className="flex items-center gap-2">
@@ -1299,7 +1312,12 @@ export default function OrderFormPage() {
                                       step="0.01"
                                       min="0"
                                       {...field}
-                                      value={field.value === undefined || field.value === null ? "" : field.value}
+                                      value={
+                                        field.value === undefined ||
+                                        field.value === null
+                                          ? ""
+                                          : field.value
+                                      }
                                       className="w-full border border-gray-200 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                                     />
                                     <span className="text-xs font-medium text-gray-500 w-6">
@@ -1339,13 +1357,11 @@ export default function OrderFormPage() {
                     </div>
                     <p className="text-sm text-purple-700 p-3 bg-purple-50/50">
                       Create {quantity} design{quantity > 1 ? "s" : ""} for your{" "}
-                      {garmentType.toLowerCase()}. Each design can have its own name, reference images, description, and price.
+                      {garmentType.toLowerCase()}. Each design can have its own
+                      name, reference images, description, and price.
                     </p>
                     {designs.map((d, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 border-t border-purple-200"
-                      >
+                      <div key={idx} className="p-3 border-t border-purple-200">
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="font-semibold text-purple-900">
                             Design #{idx + 1}
@@ -1450,7 +1466,8 @@ export default function OrderFormPage() {
                               initialData={designs[idx].canvasJson}
                             />
                             <p className="text-xs text-gray-500 mt-1 p-2">
-                              Draw or annotate your design here. Click Save to attach it to this design.
+                              Draw or annotate your design here. Click Save to
+                              attach it to this design.
                             </p>
                           </div>
                         </div>
@@ -1499,14 +1516,24 @@ export default function OrderFormPage() {
           )}
           {step === 2 && !showGarmentForm && (
             <div className="flex flex-col gap-3 w-full mt-4">
-              <div ref={garmentsSummaryRef} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold mb-4">Garments in Order</h3>
+              <div
+                ref={garmentsSummaryRef}
+                className="bg-gray-50 border border-gray-200 rounded-lg p-4"
+              >
+                <h3 className="text-lg font-semibold mb-4">
+                  Garments in Order
+                </h3>
                 {garments.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No garments added yet</p>
+                  <p className="text-gray-500 text-center py-4">
+                    No garments added yet
+                  </p>
                 ) : (
                   <div className="space-y-3">
                     {garments.map((g, idx) => (
-                      <div key={idx} className="bg-white border border-gray-200 rounded-lg p-3">
+                      <div
+                        key={idx}
+                        className="bg-white border border-gray-200 rounded-lg p-3"
+                      >
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                           <div>
                             <h4 className="font-medium">{g.order.orderType}</h4>
@@ -1580,16 +1607,26 @@ export default function OrderFormPage() {
                 >
                   {/* Order Summary Card */}
                   <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-5 mb-6">
-                    <h3 className="text-lg font-bold mb-4 text-gray-800">Order Summary</h3>
+                    <h3 className="text-lg font-bold mb-4 text-gray-800">
+                      Order Summary
+                    </h3>
                     <div className="overflow-x-auto -mx-4 sm:mx-0">
                       <div className="inline-block min-w-full align-middle">
                         <Table className="min-w-full">
                           <TableHeader>
                             <TableRow className="bg-gray-100">
-                              <TableHead className="font-bold whitespace-nowrap">Garment Type</TableHead>
-                              <TableHead className="font-bold whitespace-nowrap">Variant</TableHead>
-                              <TableHead className="font-bold whitespace-nowrap">Design #</TableHead>
-                              <TableHead className="font-bold text-right whitespace-nowrap">Amount (₹)</TableHead>
+                              <TableHead className="font-bold whitespace-nowrap">
+                                Garment Type
+                              </TableHead>
+                              <TableHead className="font-bold whitespace-nowrap">
+                                Variant
+                              </TableHead>
+                              <TableHead className="font-bold whitespace-nowrap">
+                                Design #
+                              </TableHead>
+                              <TableHead className="font-bold text-right whitespace-nowrap">
+                                Amount (₹)
+                              </TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -1599,27 +1636,44 @@ export default function OrderFormPage() {
                               g.designs.length > 0 ? (
                                 g.designs.map((design: any, i: number) => (
                                   <TableRow key={`${idx}-${i}`}>
-                                    <TableCell className="whitespace-nowrap">{g.order.orderType}</TableCell>
-                                    <TableCell className="whitespace-nowrap">{g.variant}</TableCell>
+                                    <TableCell className="whitespace-nowrap">
+                                      {g.order.orderType}
+                                    </TableCell>
+                                    <TableCell className="whitespace-nowrap">
+                                      {g.variant}
+                                    </TableCell>
                                     <TableCell className="whitespace-nowrap">
                                       {design.name || `Design ${i + 1}`}
                                     </TableCell>
-                                    <TableCell className="text-right whitespace-nowrap">₹{design.amount}</TableCell>
+                                    <TableCell className="text-right whitespace-nowrap">
+                                      ₹{design.amount}
+                                    </TableCell>
                                   </TableRow>
                                 ))
                               ) : (
                                 <TableRow key={idx}>
-                                  <TableCell className="whitespace-nowrap">{g.order.orderType}</TableCell>
-                                  <TableCell className="whitespace-nowrap">{g.variant}</TableCell>
-                                  <TableCell className="whitespace-nowrap">-</TableCell>
-                                  <TableCell className="text-right whitespace-nowrap">₹0</TableCell>
+                                  <TableCell className="whitespace-nowrap">
+                                    {g.order.orderType}
+                                  </TableCell>
+                                  <TableCell className="whitespace-nowrap">
+                                    {g.variant}
+                                  </TableCell>
+                                  <TableCell className="whitespace-nowrap">
+                                    -
+                                  </TableCell>
+                                  <TableCell className="text-right whitespace-nowrap">
+                                    ₹0
+                                  </TableCell>
                                 </TableRow>
                               )
                             )}
                           </TableBody>
                           <TableFooter>
                             <TableRow>
-                              <TableCell colSpan={3} className="font-bold text-right whitespace-nowrap">
+                              <TableCell
+                                colSpan={3}
+                                className="font-bold text-right whitespace-nowrap"
+                              >
                                 Total Amount
                               </TableCell>
                               <TableCell className="font-bold text-right whitespace-nowrap">
@@ -1778,12 +1832,12 @@ export default function OrderFormPage() {
                       </p>
                     </div>
                   )}
-                  {!deliveryForm.formState.isValid && (
-                    <div className="text-red-600 text-sm mt-2">
-                      Please fill in all required fields correctly.
-                    </div>
-                  )}
                 </CardFooter>
+                {!deliveryForm.formState.isValid && (
+                  <div className="text-red-600 text-sm mt-2">
+                    Please fill in all required fields correctly.
+                  </div>
+                )}
                 {submitSuccess && (
                   <div className="text-green-700 font-bold text-center mt-4 text-lg flex flex-col items-center gap-2">
                     <span>{submitSuccess}</span>
@@ -2321,7 +2375,7 @@ export default function OrderFormPage() {
                               Amount:
                             </span>
                             <span className="font-semibold text-green-600 text-sm">
-                              ₹$
+                              ₹
                               {submittedOrder?.totalAmount ||
                                 totalAmount.toFixed(2)}
                             </span>

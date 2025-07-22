@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const { to, params } = await req.json();
+  const { to, params, templateName } = await req.json();
 
   // WhatsApp API endpoint and token
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || "703783789484730";
@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
     to,
     type: "template",
     template: {
-      name: "order_invoice",
-      language: { code: "en" }, // Changed from en_US to en
+      name: templateName || "order_invoice",
+      language: { code: "en" },
       components: [
         {
           type: "body",

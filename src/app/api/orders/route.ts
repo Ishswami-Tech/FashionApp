@@ -134,6 +134,114 @@ async function uploadBufferToCloudinary(buffer, filename, mimetype) {
 
 // --- HTML template functions for invoices ---
 
+const inMemoryOrderSequence = {};
+
+async function getRobustOrderId(db, date, client, orderData) {
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  const key = `${yyyy}${mm}${dd}`;
+
+  let mongoSeq = 0, lastOrderSeq = 0, memSeq = inMemoryOrderSequence[key] || 0;
+  let fallbackError = null;
+
+  // 1. Try MongoDB atomic sequence
+  try {
+    const result = await db.collection('order_sequences').findOneAndUpdate(
+      { date: key },
+      { $inc: { seq: 1 } },
+      { upsert: true, returnDocument: 'after' }
+    );
+    mongoSeq = result.value?.seq ?? 1;
+  } catch (e) {
+    console.error('MongoDB sequence error:', e);
+    fallbackError = e;
+  }
+
+  // 2. Query latest order
+  try {
+    const latestOrder = await db.collection('orders')
+      .find({ oid: { $regex: `^${key}` } })
+      .sort({ createdAt: -1 })
+      .limit(1)
+      .toArray();
+    if (latestOrder.length > 0) {
+      lastOrderSeq = parseInt(latestOrder[0].oid.slice(8), 10);
+    }
+  } catch (e) {
+    console.error('Latest order query error:', e);
+    fallbackError = e;
+  }
+
+  // 3. In-memory
+  try {
+    memSeq = inMemoryOrderSequence[key] || 0;
+  } catch (e) {
+    console.error('In-memory sequence error:', e);
+    fallbackError = e;
+  }
+
+  // 4. Take the max and increment
+  const nextSeq = Math.max(mongoSeq, lastOrderSeq, memSeq) + 1;
+  const seqStr = String(nextSeq).padStart(3, '0');
+  const oid = `${key}${seqStr}`;
+
+  // 5. Sync all sources
+  inMemoryOrderSequence[key] = nextSeq;
+  try {
+    await db.collection('order_sequences').updateOne(
+      { date: key },
+      { $set: { seq: nextSeq } },
+      { upsert: true }
+    );
+  } catch (e) {
+    console.error('MongoDB sequence sync error:', e);
+    fallbackError = e;
+  }
+
+  // 6. Debug log
+  console.log({ mongoSeq, lastOrderSeq, memSeq, nextSeq, oid });
+
+  // 7. Try to insert order, retry on duplicate key error
+  let insertResult = null;
+  try {
+    insertResult = await db.collection('orders').insertOne({ ...orderData, oid });
+    return { oid, insertResult };
+  } catch (e) {
+    if (e.code === 11000) { // Duplicate key error
+      console.warn('Duplicate order ID, retrying...');
+      // Recursively retry (could add a max retry count)
+      return await getRobustOrderId(db, date, client, orderData);
+    } else {
+      console.error('Order insert error:', e);
+      fallbackError = e;
+    }
+  }
+
+  // 8. If all else fails, try a MongoDB transaction
+  try {
+    const session = client.startSession();
+    let txnOid = oid;
+    let txnInsertResult = null;
+    await session.withTransaction(async () => {
+      const txnResult = await db.collection('order_sequences').findOneAndUpdate(
+        { date: key },
+        { $inc: { seq: 1 } },
+        { upsert: true, returnDocument: 'after', session }
+      );
+      const txnSeqNum = txnResult.value?.seq ?? 1;
+      const txnSeq = String(txnSeqNum).padStart(3, '0');
+      txnOid = `${key}${txnSeq}`;
+      txnInsertResult = await db.collection('orders').insertOne({ ...orderData, oid: txnOid }, { session });
+    });
+    await session.endSession();
+    return { oid: txnOid, insertResult: txnInsertResult };
+  } catch (e) {
+    console.error('Transaction fallback error:', e);
+    throw fallbackError || e;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     // 1. Parse form data
@@ -141,10 +249,8 @@ export async function POST(req: NextRequest) {
     console.log('Parsed files:', files); // LOG parsed files
     const now = new Date();
     const formattedDate = formatDate(now);
-    // --- Use persistent order sequence ---
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "fashionapp");
-    const oid = await getTodayOrderIdFromDb(db, now);
 
     // 2. Parse and flatten nested JSON fields from the form
     let customer = {};
@@ -172,7 +278,7 @@ export async function POST(req: NextRequest) {
       const garment = garments[i];
       const measurement = garment.measurement || {};
       const garmentType = (garment.order?.orderType || 'GARMENT').replace(/\s+/g, '').toUpperCase();
-      const orderSeq = oid.split('-').pop() || '000';
+      const orderSeq = order.oid.split('-').pop() || '000';
       const garmentIndex = i + 1;
       // Upload canvasImage file to Cloudinary if present
       if (files[`canvasImage_${i}`]) {
@@ -181,7 +287,7 @@ export async function POST(req: NextRequest) {
         if (!file.mimetype) file.mimetype = 'image/png';
         const imageNum = 1;
         const businessName = `ORD+${garmentType}+${orderSeq}+${garmentIndex}+CANVAS+${imageNum}`;
-        const folder = `orders/${dateFolder}/${oid}`;
+        const folder = `orders/${dateFolder}/${order.oid}`;
         const result = await new Promise((resolve, reject) => {
           cloudinary.uploader.upload_stream(
             { resource_type: 'image', public_id: businessName.replace(/\+/g, '_'), folder },
@@ -207,7 +313,7 @@ export async function POST(req: NextRequest) {
             if (!file.mimetype) file.mimetype = 'image/png';
             const imageNum = j + 1;
             const businessName = `ORD+${garmentType}+${orderSeq}+${garmentIndex}+REF+${d + 1}+${imageNum}`;
-            const folder = `orders/${dateFolder}/${oid}`;
+            const folder = `orders/${dateFolder}/${order.oid}`;
             const result = await new Promise((resolve, reject) => {
               cloudinary.uploader.upload_stream(
                 { resource_type: 'image', public_id: businessName.replace(/\+/g, '_'), folder },
@@ -234,29 +340,29 @@ export async function POST(req: NextRequest) {
       garments[i] = garment;
     }
 
-    // 4. Build the order object
-    // Only store order data (no image buffers)
-    // Calculate total amount from all designs
-    const totalAmount = garments.reduce((sum: number, garment: any) => {
+    // 3. Build the order object (do not change structure)
+    const totalAmount = garments.reduce((sum, garment) => {
       if (garment.designs && Array.isArray(garment.designs)) {
-        return sum + garment.designs.reduce((dsum: number, design: any) => 
-          dsum + (parseFloat(design.amount) || 0), 0);
+        return sum + garment.designs.reduce((dsum, design) => dsum + (parseFloat(design.amount) || 0), 0);
       }
       return sum;
     }, 0);
-    
+
     const order = {
       ...customer,
       ...delivery,
       garments,
       totalAmount: totalAmount.toFixed(2),
-      oid,
       orderDate: formattedDate,
       createdAt: now,
+      // oid will be assigned below
     };
-    console.log('Final order to be saved in MongoDB:', order); // LOG final order
 
-    // 5. Store in MongoDB
+    // 4. Generate robust order ID and assign to order object
+    const oid = await getRobustOrderId(db, now, client, order);
+    order.oid = oid;
+
+    // 5. Store in MongoDB (as before)
     const insertResult = await db.collection("orders").insertOne(order);
 
     // Fetch the inserted order (with _id)

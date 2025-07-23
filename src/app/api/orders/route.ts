@@ -272,13 +272,16 @@ export async function POST(req: NextRequest) {
       console.error('Delivery parse error:', err);
     }
 
+    // 4. Generate robust order ID before the garments loop
+    const { oid } = await getRobustOrderId(db, now, client, {}); // Destructure to get oid string
+
     // 3. For each garment, attach file Buffers (canvasImage, designReference, voiceNote) if present
     const dateFolder = formattedDate.replace(/\//g, '-'); // e.g. 11-07-2025
     for (let i = 0; i < garments.length; i++) {
       const garment = garments[i];
       const measurement = garment.measurement || {};
       const garmentType = (garment.order?.orderType || 'GARMENT').replace(/\s+/g, '').toUpperCase();
-      const orderSeq = order.oid.split('-').pop() || '000';
+      const orderSeq = oid.split('-').pop() || '000';
       const garmentIndex = i + 1;
       // Upload canvasImage file to Cloudinary if present
       if (files[`canvasImage_${i}`]) {
@@ -287,7 +290,7 @@ export async function POST(req: NextRequest) {
         if (!file.mimetype) file.mimetype = 'image/png';
         const imageNum = 1;
         const businessName = `ORD+${garmentType}+${orderSeq}+${garmentIndex}+CANVAS+${imageNum}`;
-        const folder = `orders/${dateFolder}/${order.oid}`;
+        const folder = `orders/${dateFolder}/${oid}`;
         const result = await new Promise((resolve, reject) => {
           cloudinary.uploader.upload_stream(
             { resource_type: 'image', public_id: businessName.replace(/\+/g, '_'), folder },
@@ -313,7 +316,7 @@ export async function POST(req: NextRequest) {
             if (!file.mimetype) file.mimetype = 'image/png';
             const imageNum = j + 1;
             const businessName = `ORD+${garmentType}+${orderSeq}+${garmentIndex}+REF+${d + 1}+${imageNum}`;
-            const folder = `orders/${dateFolder}/${order.oid}`;
+            const folder = `orders/${dateFolder}/${oid}`;
             const result = await new Promise((resolve, reject) => {
               cloudinary.uploader.upload_stream(
                 { resource_type: 'image', public_id: businessName.replace(/\+/g, '_'), folder },
@@ -355,12 +358,8 @@ export async function POST(req: NextRequest) {
       totalAmount: totalAmount.toFixed(2),
       orderDate: formattedDate,
       createdAt: now,
-      // oid will be assigned below
+      oid,
     };
-
-    // 4. Generate robust order ID and assign to order object
-    const oid = await getRobustOrderId(db, now, client, order);
-    order.oid = oid;
 
     // 5. Store in MongoDB (as before)
     const insertResult = await db.collection("orders").insertOne(order);

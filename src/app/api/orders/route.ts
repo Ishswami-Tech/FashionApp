@@ -8,6 +8,7 @@ import { Readable } from "stream";
 import cloudinary from '@/lib/cloudinary';
 import { generatePdf } from '@/lib/pdf';
 import { getCustomerInvoiceHtml } from "@/templates/invoices/customerInvoiceHtml";
+import { getTailorInvoiceHtml } from "@/templates/invoices/tailorInvoiceHtml";
 
 export const config = {
   api: {
@@ -22,17 +23,20 @@ function formatDate(date: Date) {
   return `${dd}/${mm}/${yyyy}`;
 }
 
-// In-memory order sequence tracking (resets on server restart)
-const orderSequence: { [date: string]: number } = {};
-
-function getTodayOrderId(date: Date) {
+// Persistent daily order sequence using MongoDB (robust atomic approach)
+async function getTodayOrderIdFromDb(db, date) {
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const yyyy = date.getFullYear();
   const key = `${yyyy}${mm}${dd}`;
-  if (!orderSequence[key]) orderSequence[key] = 1;
-  else orderSequence[key]++;
-  const seq = String(orderSequence[key]).padStart(3, '0');
+  // Atomically increment and fetch the sequence for today
+  const result = await db.collection('order_sequences').findOneAndUpdate(
+    { date: key },
+    { $inc: { seq: 1 } },
+    { upsert: true, returnDocument: 'after' }
+  );
+  const seqNum = result.value?.seq ?? 1;
+  const seq = String(seqNum).padStart(3, '0');
   return `${yyyy}${mm}${dd}${seq}`;
 }
 
@@ -127,103 +131,6 @@ async function uploadBufferToCloudinary(buffer, filename, mimetype) {
 }
 
 // --- HTML template functions for invoices ---
-function getTailorInvoiceHtml(order) {
-  const garmentsData = order.garments || [];
-  const deliveryData = order;
-  const orderIdValue = order.oid;
-  const garment = garmentsData[0] || {};
-  const design = garment.designs && Array.isArray(garment.designs) && garment.designs.length > 0 ? garment.designs[0] : null;
-  function renderDesignImages(design) {
-    let images = [];
-    if (design && design.canvasImage && typeof design.canvasImage === "string" && design.canvasImage.startsWith("data:image/")) {
-      images.push(`<img src="${design.canvasImage}" alt="Canvas Drawing" class="canvas-image" />`);
-    }
-    const refs = [
-      ...(Array.isArray(design?.designReference) ? design.designReference : []),
-      ...(Array.isArray(design?.designReferenceFiles) ? design.designReferenceFiles : []),
-    ];
-    images = images.concat(
-      refs
-        .map((img, idx) => {
-          if (typeof img === "string") return `<img src="${img}" alt="Reference ${idx + 1}" class="canvas-image" />`;
-          if (img && img.url) return `<img src="${img.url}" alt="Reference ${idx + 1}" class="canvas-image" />`;
-          return "";
-        })
-        .filter(Boolean)
-    );
-    return images.slice(0, 4).join("");
-  }
-  return `<!DOCTYPE html>
-  <html>
-  <head>
-    <title>Tailor Work Order</title>
-    <style>
-      body { font-family: Arial, sans-serif; font-size: 13px; background: #fafbfc; margin: 0; padding: 0; }
-      .main-container { max-width: 1000px; margin: 24px auto; background: #fff; border: 2px solid #388e3c; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 32px 24px; }
-      .order-id { font-size: 18px; font-weight: bold; color: #388e3c; margin-bottom: 18px; letter-spacing: 1px; }
-      .two-col { display: grid; grid-template-columns: 1fr 1.2fr; gap: 32px; align-items: flex-start; }
-      .section-title { font-weight: bold; color: #388e3c; margin-bottom: 10px; font-size: 16px; border-bottom: 1.5px solid #388e3c; padding-bottom: 4px; }
-      .measurement-list { list-style: none; padding: 0; margin: 0; }
-      .measurement-list li { margin-bottom: 4px; padding: 4px 6px; font-size: 11px; }
-      .measurement-label { font-weight: bold; color: #222; margin-right: 8px; }
-      .canvas-image { max-width: 300px; max-height: 300px; width: 300px; height: auto; object-fit: contain; border: 2px solid #388e3c; border-radius: 6px; background: #f8f9fa; box-shadow: 0 1px 4px #0001; margin-bottom: 10px; }
-      .design-images { display: flex; gap: 16px; margin: 18px 0; }
-      .right-col-section { margin-bottom: 24px; }
-      .work-instructions { background: #e8f5e8; border-left: 4px solid #388e3c; border-radius: 6px; padding: 16px 14px; font-size: 14px; color: #222; margin-top: 18px; }
-      table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
-      th, td { border: 1.5px solid #e0e0e0; padding: 8px 10px; text-align: left; }
-    </style>
-  </head>
-  <body>
-    <div class="main-container">
-      <div class="order-id">Order ID: ${orderIdValue}</div>
-      <div class="two-col">
-        <div>
-          <div class="section-title">Measurements</div>
-          <ul class="measurement-list">
-            ${garment.measurement && garment.measurement.measurements && Object.keys(garment.measurement.measurements).length > 0
-              ? Object.entries(garment.measurement.measurements)
-                  .map(
-                    ([key, value]) => `<li><span class="measurement-label">${key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}:</span> ${value}</li>`
-                  )
-                  .join("")
-              : "<li>No measurements</li>"}
-          </ul>
-        </div>
-        <div>
-          <div class="right-col-section">
-            <div class="section-title">Design Reference</div>
-            ${design
-              ? `<div><strong>${garment.order?.orderType || ""} - ${garment.variant || ""}</strong></div>
-                <div><strong>Design 1:</strong> ${design.name || "Design 1"}</div>
-                <div>${design.designDescription || "Custom design"}</div>
-                <div class="design-images">${renderDesignImages(design) || "<span>No images</span>"}</div>`
-              : "<div>No design data</div>"}
-          </div>
-          <div class="right-col-section">
-            <div class="section-title">Delivery Details</div>
-            <table>
-              <tr><th>Delivery Date</th><td>${deliveryData.deliveryDate || ''}</td></tr>
-            </table>
-          </div>
-          <div class="work-instructions">
-            <div style="font-weight:bold; margin-bottom:6px;">Work Instructions</div>
-            ${garment
-              ? `<div>• ${garment.order?.orderType || ""} in ${garment.variant || ""} variant</div>
-                <div>• Quantity: ${garment.order?.quantity || ""}</div>
-                <div>• Urgency: ${garment.order?.urgency || ""}</div>
-                <div>• Follow the design references provided</div>
-                <div>• Use the exact measurements provided</div>
-                <div>• Special instructions: ${deliveryData.specialInstructions || "None"}</div>
-                <div>• Complete by: ${deliveryData.deliveryDate || ''}</div>`
-              : "<div>No garment data</div>"}
-          </div>
-        </div>
-      </div>
-    </div>
-  </body>
-  </html>`;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -232,7 +139,10 @@ export async function POST(req: NextRequest) {
     console.log('Parsed files:', files); // LOG parsed files
     const now = new Date();
     const formattedDate = formatDate(now);
-    const oid = getTodayOrderId(now);
+    // --- Use persistent order sequence ---
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB || "fashionapp");
+    const oid = await getTodayOrderIdFromDb(db, now);
 
     // 2. Parse and flatten nested JSON fields from the form
     let customer = {};
@@ -345,8 +255,6 @@ export async function POST(req: NextRequest) {
     console.log('Final order to be saved in MongoDB:', order); // LOG final order
 
     // 5. Store in MongoDB
-    const client = await clientPromise;
-    const db = client.db(process.env.MONGODB_DB || "fashionapp");
     const insertResult = await db.collection("orders").insertOne(order);
 
     // Fetch the inserted order (with _id)

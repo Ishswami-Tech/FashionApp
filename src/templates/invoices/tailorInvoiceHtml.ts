@@ -1,19 +1,11 @@
 // Shared enhanced tailor invoice HTML template for Sony Fashion
 // This function is used by both order creation and PDF generation endpoints
 
-function formatDisplayDate(dateStr: string | undefined) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
-}
-
 export function getTailorInvoiceHtml(order: any) {
   const garmentsData = order.garments || [];
   const deliveryData = order;
   const orderIdValue = order.oid;
-  const garment = garmentsData[0] || {};
-  const design = garment.designs && Array.isArray(garment.designs) && garment.designs.length > 0 ? garment.designs[0] : null;
+
   function renderDesignImages(design: any) {
     let images: string[] = [];
     if (design && design.canvasImage && typeof design.canvasImage === "string" && design.canvasImage.startsWith("data:image/")) {
@@ -32,8 +24,16 @@ export function getTailorInvoiceHtml(order: any) {
         })
         .filter(Boolean)
     );
-    return images.slice(0, 4).join("");
+    return images.length > 0 ? images.join("") : "<span>No images</span>";
   }
+
+  function formatDisplayDate(dateStr: string | undefined) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -42,6 +42,8 @@ export function getTailorInvoiceHtml(order: any) {
     body { font-family: Arial, sans-serif; font-size: 11px; background: #fafbfc; margin: 0; padding: 0; }
     .main-container { max-width: 900px; margin: 12px auto; background: #fff; border: 1.5px solid #388e3c; border-radius: 8px; box-shadow: 0 1px 4px #0001; padding: 16px 10px; }
     .order-id { font-size: 14px; font-weight: bold; color: #388e3c; margin-bottom: 10px; letter-spacing: 1px; }
+    .garment-section { border: 1.5px solid #388e3c; border-radius: 8px; margin-bottom: 28px; padding: 18px 14px; background: #f6fff6; }
+    .garment-title { font-size: 15px; font-weight: bold; color: #2e7d32; margin-bottom: 8px; }
     .two-col { display: grid; grid-template-columns: 1fr 1.2fr; gap: 12px; align-items: flex-start; }
     .section-title { font-weight: bold; color: #388e3c; margin-bottom: 6px; font-size: 13px; border-bottom: 1px solid #388e3c; padding-bottom: 2px; }
     .measurement-list { list-style: none; padding: 0; margin: 0; }
@@ -59,46 +61,55 @@ export function getTailorInvoiceHtml(order: any) {
 <body>
   <div class="main-container">
     <div class="order-id" style="font-size:20px;font-weight:bold;">Order ID: ${orderIdValue}</div>
-    <div class="two-col">
-      <div>
-        <div class="section-title">Measurements</div>
-        <ul class="measurement-list">
-          ${garment.measurement && garment.measurement.measurements && Object.keys(garment.measurement.measurements).length > 0
-            ? Object.entries(garment.measurement.measurements)
-                .map(
-                  ([key, value]) => `<li><span class="measurement-label">${key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}:</span> <span class="measurement-value">${value}</span></li>`
-                )
-                .join("")
-            : "<li>No measurements</li>"}
-        </ul>
-      </div>
-      <div>
-        <div class="right-col-section">
-          <div class="section-title">Design Reference Images</div>
-          <div class="design-images">
-            ${design ? renderDesignImages(design) : "<span>No design images</span>"}
+    ${garmentsData.map((garment: any, gIdx: number) => `
+      <div class="garment-section">
+        <div class="garment-title">Garment ${gIdx + 1}: ${garment.order?.orderType || ""} ${garment.variant ? `- ${garment.variant}` : ""}</div>
+        <div class="two-col">
+          <div>
+            <div class="section-title">Measurements</div>
+            <ul class="measurement-list">
+              ${garment.measurement && garment.measurement.measurements && Object.keys(garment.measurement.measurements).length > 0
+                ? Object.entries(garment.measurement.measurements)
+                    .map(
+                      ([key, value]) => `<li><span class="measurement-label">${key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}:</span> <span class="measurement-value">${value}</span></li>`
+                    )
+                    .join("")
+                : "<li>No measurements</li>"}
+            </ul>
           </div>
-        </div>
-        <div class="right-col-section">
-          <div class="section-title">Delivery Details</div>
-          <table>
-            <tr><th>Delivery Date</th><td>${formatDisplayDate(deliveryData.deliveryDate)}</td></tr>
-          </table>
-        </div>
-        <div class="work-instructions">
-          <div style="font-weight:bold; margin-bottom:4px;">Work Instructions</div>
-          ${garment
-            ? `<div>• ${garment.order?.orderType || ""} in ${garment.variant || ""} variant</div>
+          <div>
+            <div class="right-col-section">
+              <div class="section-title">Design References</div>
+              ${Array.isArray(garment.designs) && garment.designs.length > 0
+                ? garment.designs.map((design: any, idx: number) => `
+                    <div style="margin-bottom:14px;">
+                      <div><strong>Design ${idx + 1}:</strong> ${design.name || `Design ${idx + 1}`}</div>
+                      <div>${design.designDescription || "Custom design"}</div>
+                      <div class="design-images">${renderDesignImages(design)}</div>
+                    </div>
+                  `).join("")
+                : "<div>No design data</div>"}
+            </div>
+            <div class="right-col-section">
+              <div class="section-title">Delivery Details</div>
+              <table>
+                <tr><th>Delivery Date</th><td>${formatDisplayDate(deliveryData.deliveryDate)}</td></tr>
+              </table>
+            </div>
+            <div class="work-instructions">
+              <div style="font-weight:bold; margin-bottom:4px;">Work Instructions</div>
+              <div>• ${garment.order?.orderType || ""} ${garment.variant ? `in ${garment.variant} variant` : ""}</div>
               <div>• Quantity: ${garment.order?.quantity || ""}</div>
               <div>• Urgency: ${garment.order?.urgency || ""}</div>
               <div>• Follow the design references provided</div>
               <div>• Use the exact measurements provided</div>
               <div>• Special instructions: ${deliveryData.specialInstructions || "None"}</div>
-              <div>• Complete by: ${deliveryData.deliveryDate || ''}</div>`
-            : "<div>No garment data</div>"}
+              <div>• Complete by: ${deliveryData.deliveryDate || ''}</div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    `).join("")}
   </div>
 </body>
 </html>`;

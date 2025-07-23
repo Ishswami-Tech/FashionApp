@@ -23,7 +23,7 @@ function formatDate(date: Date) {
   return `${dd}/${mm}/${yyyy}`;
 }
 
-// Persistent daily order sequence using MongoDB (robust atomic approach)
+// Persistent daily order sequence using MongoDB (robust atomic approach with debug logging)
 async function getTodayOrderIdFromDb(db, date) {
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -35,6 +35,8 @@ async function getTodayOrderIdFromDb(db, date) {
     { $inc: { seq: 1 } },
     { upsert: true, returnDocument: 'after' }
   );
+  console.log('Order sequence result:', result); // Debug log
+  // Defensive: fallback to 1 if result.value is missing (shouldn't happen, but safe)
   const seqNum = result.value?.seq ?? 1;
   const seq = String(seqNum).padStart(3, '0');
   return `${yyyy}${mm}${dd}${seq}`;

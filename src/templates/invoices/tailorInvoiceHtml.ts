@@ -4,6 +4,9 @@
 export function getTailorInvoiceHtml(order: any) {
   const garmentsData = order.garments || [];
   const deliveryData = order;
+  const paymentMethod = deliveryData.payment || '';
+  const advanceAmount = order.advanceAmount ? Number(order.advanceAmount) : 0;
+  const dueAmount = order.dueAmount !== undefined ? Number(order.dueAmount) : undefined;
   const orderIdValue = order.oid;
 
   function renderDesignImages(design: any) {
@@ -94,6 +97,8 @@ export function getTailorInvoiceHtml(order: any) {
               <div class="section-title">Delivery Details</div>
               <table>
                 <tr><th>Delivery Date</th><td>${formatDisplayDate(deliveryData.deliveryDate)}</td></tr>
+                ${paymentMethod === 'advance' && advanceAmount ? `<tr><th>Advance Paid</th><td>₹${advanceAmount.toLocaleString('en-IN')}</td></tr>` : ''}
+                ${paymentMethod === 'advance' && dueAmount !== undefined ? `<tr><th>Amount Due</th><td><b>₹${dueAmount.toLocaleString('en-IN')}</b></td></tr>` : ''}
               </table>
             </div>
             <div class="work-instructions">

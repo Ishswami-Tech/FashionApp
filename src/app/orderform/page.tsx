@@ -69,9 +69,10 @@ const allGarmentTypes = Array.from(
 ) as [string, ...string[]];
 
 const orderDetailsSchema = z.object({
-  orderType: z.enum(allGarmentTypes, {
-    required_error: "Select a garment type",
-  }),
+  orderType: z.string().refine(
+    (val) => allGarmentTypes.includes(val),
+    { message: "Select a valid garment type" }
+  ),
   quantity: z.coerce.number().min(1, "Minimum 1").max(10, "Maximum 10"),
 });
 
@@ -99,7 +100,6 @@ const measurementSchema = z.object({
 const deliverySchema = z.object({
   deliveryDate: z.date().refine(
     (date) => {
-      // Use a fixed reference date for validation to avoid hydration issues
       const minDate = new Date();
       minDate.setDate(minDate.getDate() + 3);
       return date && date >= minDate;
@@ -108,14 +108,25 @@ const deliverySchema = z.object({
       message: "Delivery date must be at least 3 days from today",
     }
   ),
-  urgency: z.enum(["regular", "priority", "express"], {
-    required_error: "Select urgency",
-  }),
-  payment: z.enum(["cod", "upi", "bank"], {
+  urgency: z.enum(["regular", "priority", "express"]).optional(),
+  payment: z.enum(["cod", "upi", "bank", "advance"], {
     required_error: "Select a payment preference",
   }),
+  // Make advanceAmount always required and a number
+  advanceAmount: z.coerce.number()
+    .min(0, "Enter advance amount")
+    .max(1000000, "Too high")
+    .transform((val) => (isNaN(val) ? 0 : val)),
   specialInstructions: z.string().optional(),
-});
+}).refine(
+  (data) => {
+    if (data.payment === 'advance') {
+      return typeof data.advanceAmount === 'number' && data.advanceAmount >= 0;
+    }
+    return true;
+  },
+  { message: 'Advance amount required', path: ['advanceAmount'] }
+);
 
 type CustomerInfo = z.infer<typeof customerInfoSchema>;
 type OrderDetails = z.infer<typeof orderDetailsSchema>;
@@ -748,6 +759,7 @@ export default function OrderFormPage() {
     defaultValues: {
       deliveryDate: undefined,
       payment: undefined,
+      advanceAmount: 0,
       specialInstructions: "",
     },
   });
@@ -1410,27 +1422,67 @@ export default function OrderFormPage() {
                             />
                           </div>
                         </div>
-                        <div className="mt-3">
+                             {/* Design Reference Images Preview & Upload */}
+                             <div className="mt-2">
                           <label className="block font-medium mb-1 text-sm text-gray-700">
-                            Design Reference Images
+                            Design Reference Images (max 5)
                           </label>
                           <Input
                             type="file"
-                            accept="image/jpeg,image/png"
+                            accept="image/*"
+                            capture="environment"
                             multiple
                             onChange={(e) => {
                               const files = Array.from(e.target.files || []);
                               setDesigns((prev) => {
                                 const arr = [...prev];
-                                arr[idx].designReference = files;
+                                // Merge with existing, limit to 5
+                                const existing = arr[idx].designReference || [];
+                                const allFiles = [...existing, ...files].slice(0, 5);
+                                arr[idx].designReference = allFiles;
+                                // Store preview URLs
+                                arr[idx].designReferencePreviews = allFiles.map((file) =>
+                                  typeof file === "string" ? file : URL.createObjectURL(file)
+                                );
                                 return arr;
                               });
                             }}
                             className="w-full"
+                            disabled={designs[idx].designReference?.length >= 5}
                           />
                           <p className="text-xs text-gray-500 mt-1">
-                            Upload reference images for this design (optional)
+                            Upload or take up to 5 reference images for this design.
                           </p>
+                          {/* Image Previews */}
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {(designs[idx].designReferencePreviews || []).map((url: string, i: number) => (
+                              <div key={i} className="relative group">
+                                <img
+                                  src={url}
+                                  alt={`Reference ${i + 1}`}
+                                  className="w-20 h-20 object-cover border rounded"
+                                />
+                                {/* Remove button */}
+                                <button
+                                  type="button"
+                                  className="absolute top-0 right-0 bg-white bg-opacity-80 rounded-full p-1 text-xs text-red-600 group-hover:visible invisible"
+                                  onClick={() => {
+                                    setDesigns((prev) => {
+                                      const arr = [...prev];
+                                      arr[idx].designReference.splice(i, 1);
+                                      arr[idx].designReferencePreviews.splice(i, 1);
+                                      arr[idx].designReference = [...arr[idx].designReference];
+                                      arr[idx].designReferencePreviews = [...arr[idx].designReferencePreviews];
+                                      return arr;
+                                    });
+                                  }}
+                                  aria-label="Remove image"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                         <div className="mt-3">
                           <label className="block font-medium mb-1 text-sm text-gray-700">
@@ -1484,6 +1536,7 @@ export default function OrderFormPage() {
                             />
                           </div>
                         )}
+                  
                       </div>
                     ))}
                   </div>
@@ -1587,7 +1640,7 @@ export default function OrderFormPage() {
                   variant="default"
                   onClick={() => setStep(3)}
                   disabled={garments.length === 0}
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto px-6 py-2 rounded-lg font-semibold shadow-md"
                 >
                   Continue
                 </Button>
@@ -1674,12 +1727,26 @@ export default function OrderFormPage() {
                                 colSpan={3}
                                 className="font-bold text-right whitespace-nowrap"
                               >
-                                Total Amount
+                                Total Amount:
                               </TableCell>
                               <TableCell className="font-bold text-right whitespace-nowrap">
                                 ₹{totalAmount.toFixed(2)}
                               </TableCell>
                             </TableRow>
+                            {deliveryForm.watch('payment') === 'advance' ? (
+                              <>
+                                <TableRow>
+                                  <TableCell colSpan={3} className="text-right">Advance Paid:</TableCell>
+                                  <TableCell className="text-right">₹{deliveryForm.watch('advanceAmount') ?? 0}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                  <TableCell colSpan={3} className="font-bold text-right whitespace-nowrap">Amount Due:</TableCell>
+                                  <TableCell className="font-bold text-right whitespace-nowrap">
+                                    ₹{Math.max(0, totalAmount - Number(deliveryForm.watch('advanceAmount') || 0)).toFixed(2)}
+                                  </TableCell>
+                                </TableRow>
+                              </>
+                            ) : null}
                           </TableFooter>
                         </Table>
                       </div>
@@ -1716,6 +1783,9 @@ export default function OrderFormPage() {
                                   <SelectItem value="bank">
                                     Bank Transfer
                                   </SelectItem>
+                                  <SelectItem value="advance">
+                                    Advance Payment
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </FormControl>
@@ -1723,6 +1793,29 @@ export default function OrderFormPage() {
                           </FormItem>
                         )}
                       />
+                      {/* Advance Amount input if payment is advance */}
+                      {deliveryForm.watch('payment') === 'advance' && (
+                        <FormField
+                          control={deliveryForm.control}
+                          name="advanceAmount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Advance Amount *</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={totalAmount}
+                                  placeholder="Enter advance amount"
+                                  {...field}
+                                  value={field.value ?? ''}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
                       <FormField
                         control={deliveryForm.control}
                         name="specialInstructions"
@@ -1772,14 +1865,14 @@ export default function OrderFormPage() {
                         name="urgency"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Urgency *</FormLabel>
+                            <FormLabel>Urgency</FormLabel>
                             <FormControl>
                               <Select
                                 onValueChange={field.onChange}
                                 value={field.value}
                               >
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Select urgency" />
+                                  <SelectValue placeholder="Select urgency (optional)" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="regular">
@@ -2480,6 +2573,20 @@ export default function OrderFormPage() {
                               totalAmount.toFixed(2)}
                           </td>
                         </tr>
+                        {deliveryForm.watch('payment') === 'advance' ? (
+                          <>
+                            <tr>
+                              <td colSpan={3} className="text-right">Advance Paid:</td>
+                              <td className="text-right">₹{deliveryForm.watch('advanceAmount') ?? 0}</td>
+                            </tr>
+                            <tr>
+                              <td colSpan={3} className="font-bold text-right whitespace-nowrap">Amount Due:</td>
+                              <TableCell className="font-bold text-right whitespace-nowrap">
+                                ₹{Math.max(0, totalAmount - Number(deliveryForm.watch('advanceAmount') || 0)).toFixed(2)}
+                              </TableCell>
+                            </tr>
+                          </>
+                        ) : null}
                       </tfoot>
                     </table>
                   </div>

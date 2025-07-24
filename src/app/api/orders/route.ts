@@ -359,6 +359,8 @@ export async function POST(req: NextRequest) {
       orderDate: formattedDate,
       createdAt: now,
       oid,
+      advanceAmount: delivery.advanceAmount ? Number(delivery.advanceAmount) : 0,
+      dueAmount: delivery.advanceAmount ? (totalAmount - Number(delivery.advanceAmount)) : totalAmount,
     };
 
     // 5. Store in MongoDB (as before)
@@ -453,7 +455,15 @@ export async function POST(req: NextRequest) {
         updatedOrder.orderDate || "",
         (updatedOrder.garments || []).map((g) => g.order?.orderType).join(", ") || "",
         updatedOrder.totalAmount || "",
-        updatedOrder.deliveryDate || "",
+        updatedOrder.deliveryDate
+          ? new Date(updatedOrder.deliveryDate).toLocaleDateString("en-IN", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          : "",
+        updatedOrder.payment === 'advance' && updatedOrder.advanceAmount ? `Advance: ₹${updatedOrder.advanceAmount}` : "",
+        updatedOrder.payment === 'advance' && updatedOrder.dueAmount !== undefined ? `Due: ₹${updatedOrder.dueAmount}` : "",
         invoiceLink
       ];
       

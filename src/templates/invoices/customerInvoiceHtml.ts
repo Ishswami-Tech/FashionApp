@@ -57,6 +57,8 @@ export function getCustomerInvoiceHtml(order: any) {
   const paymentMethod = deliveryData.payment || 'Cash on Delivery';
   const specialInstructions = deliveryData.specialInstructions || 'None';
   const deliveryDate = formatDisplayDate(deliveryData.deliveryDate);
+  const advanceAmount = order.advanceAmount ? Number(order.advanceAmount) : 0;
+  const dueAmount = order.dueAmount !== undefined ? Number(order.dueAmount) : (total - advanceAmount);
 
   // Customer info
   const customerName = customerData.fullName || '-';
@@ -314,6 +316,8 @@ export function getCustomerInvoiceHtml(order: any) {
             <tr><th>Special Instructions</th><td>${specialInstructions}</td></tr>
             <tr><th>Status</th><td><span class="status-badge status-pending">${status}</span></td></tr>
             <tr><th>Total Amount</th><td class="total-amount-cell">₹${total.toLocaleString('en-IN')}</td></tr>
+            ${paymentMethod === 'advance' && advanceAmount ? `<tr><th>Advance Paid</th><td>₹${advanceAmount.toLocaleString('en-IN')}</td></tr>` : ''}
+            ${paymentMethod === 'advance' && advanceAmount ? `<tr><th>Amount Due</th><td><b>₹${dueAmount.toLocaleString('en-IN')}</b></td></tr>` : ''}
           </table>
         </div>
       </div>

@@ -360,7 +360,7 @@ export async function POST(req: NextRequest) {
       createdAt: now,
       oid,
       advanceAmount: delivery.advanceAmount ? Number(delivery.advanceAmount) : 0,
-      dueAmount: delivery.advanceAmount ? (totalAmount - Number(delivery.advanceAmount)) : totalAmount,
+      dueAmount: Math.max(0, totalAmount - Number(delivery.advanceAmount) || 0),
     };
 
     // 5. Store in MongoDB (as before)

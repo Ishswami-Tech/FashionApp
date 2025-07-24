@@ -174,6 +174,7 @@ export default function OrderFormPage() {
   const [designs, setDesigns] = useState<any[]>([]);
   // Add state for current date to avoid hydration issues
   const [currentDate, setCurrentDate] = useState<string>("");
+  const [expandedGarmentIndex, setExpandedGarmentIndex] = useState<number | null>(null); // For collapsible UI
 
   // Set current date on client side only
   useEffect(() => {
@@ -706,24 +707,10 @@ export default function OrderFormPage() {
       variant: selectedVariant,
       order: orderForm.getValues(),
       measurement: { ...rawMeasurement, measurements },
-      designs:
-        designs.length > 0
-          ? designs
-          : [
-              {
-                name: "",
-                designReference: undefined,
-                designDescription: "",
-                canvasImage: undefined,
-                canvasJson: undefined,
-                amount: "",
-              },
-            ],
+      designs: designs.map((d) => ({ ...d })), // Deep copy
     };
     if (editingIndex !== null) {
-      setGarments((prev) =>
-        prev.map((g, i) => (i === editingIndex ? garmentData : g))
-      );
+      setGarments((prev) => prev.map((g, i) => (i === editingIndex ? garmentData : g)));
       setEditingIndex(null);
     } else {
       setGarments((prev) => [...prev, garmentData]);
@@ -733,6 +720,7 @@ export default function OrderFormPage() {
     setSelectedVariant(undefined);
     setShowGarmentForm(false);
     setDesigns([]);
+    setExpandedGarmentIndex(null);
   };
 
   // Handler to edit a garment
@@ -741,15 +729,17 @@ export default function OrderFormPage() {
     setSelectedVariant(g.variant);
     orderForm.reset(g.order);
     measurementForm.reset(g.measurement);
-    setDesigns(g.designs || []); // Reset designs for editing
+    setDesigns(g.designs ? g.designs.map((d: any) => ({ ...d })) : []);
     setEditingIndex(idx);
     setShowGarmentForm(true);
+    setExpandedGarmentIndex(idx);
   };
 
   // Handler to remove a garment
   const handleRemoveGarment = (idx: number) => {
     setGarments((prev) => prev.filter((_, i) => i !== idx));
     if (editingIndex === idx) setEditingIndex(null);
+    setExpandedGarmentIndex(null);
   };
 
   // Section 4: Delivery & Payment

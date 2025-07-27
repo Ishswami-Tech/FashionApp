@@ -30,6 +30,14 @@ export function getCustomerInvoiceHtml(order: any) {
     return `<div style='color:red;font-weight:bold;padding:32px;text-align:center;'>No garments/designs found for this order.</div>`;
   }
 
+  // Calculate total designs
+  let totalDesigns = 0;
+  validGarments.forEach((garment: any) => {
+    if (Array.isArray(garment.designs)) {
+      totalDesigns += garment.designs.length;
+    }
+  });
+
   // Build garments table rows with robust data handling
   let garmentsRows = '';
   let subtotal = 0;
@@ -59,8 +67,7 @@ export function getCustomerInvoiceHtml(order: any) {
     subtotal += itemTotal;
     totalQuantity += qty;
     
-    console.log(`[Customer Invoice] Garment ${idx + 1}: ${itemName} - ${type} x${qty} = ₹${itemTotal}`);
-    
+    // Main garment row
     garmentsRows += `
       <tr>
         <td>${itemName}</td>
@@ -68,6 +75,21 @@ export function getCustomerInvoiceHtml(order: any) {
         <td>${qty}</td>
         <td>₹${itemTotal.toLocaleString('en-IN')}</td>
       </tr>`;
+    // Add detailed design rows
+    if (Array.isArray(garment.designs) && garment.designs.length > 0) {
+      garment.designs.forEach((design: any, dIdx: number) => {
+        const designName = design.name || `Design #${dIdx + 1}`;
+        const designDesc = design.designDescription || '';
+        const designAmount = typeof design.amount === 'number' ? design.amount :
+          typeof design.amount === 'string' ? parseFloat(design.amount) || 0 : 0;
+        garmentsRows += `
+          <tr class="garment-design-row">
+            <td style="padding-left:32px;">• ${designName}${designDesc ? ` <span style='color:#888;'>${designDesc}</span>` : ''}</td>
+            <td colspan="2">${designDesc ? designDesc : ''}</td>
+            <td>₹${designAmount.toLocaleString('en-IN')}</td>
+          </tr>`;
+      });
+    }
   });
 
   // Charges (use dummy values if not present)
@@ -283,6 +305,37 @@ export function getCustomerInvoiceHtml(order: any) {
       padding: 10px 18px;
       text-align: right;
     }
+    .summary-card {
+      background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+      border: 2px solid #a78bfa;
+      border-radius: 12px;
+      padding: 18px 24px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 8px rgba(80,0,200,0.06);
+      font-size: 15px;
+      font-weight: 500;
+      color: #4b2995;
+      display: flex;
+      gap: 32px;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .summary-card .summary-label {
+      font-weight: 600;
+      color: #7c3aed;
+      margin-right: 6px;
+    }
+    .garment-summary-total-row {
+      background: #e0e7ff;
+      font-weight: bold;
+      font-size: 15px;
+      color: #4b2995;
+    }
+    .garment-design-row {
+      background: #f6f6fa;
+      font-size: 12px;
+      border-left: 3px solid #a78bfa;
+    }
     @media print {
       @page { margin: 0.5in; size: A4; }
       body { background: white; padding: 0; }
@@ -299,6 +352,11 @@ export function getCustomerInvoiceHtml(order: any) {
       <p>Date: ${formatDisplayDate(currentDate)}</p>
     </div>
     <div class="content">
+      <div class="summary-card">
+        <div><span class="summary-label">Total Garments:</span> ${validGarments.length}</div>
+        <div><span class="summary-label">Total Designs:</span> ${totalDesigns}</div>
+        <div><span class="summary-label">Total Amount:</span> ₹${total.toLocaleString('en-IN')}</div>
+      </div>
       <div class="section">
         <div class="section-title">
           👤 Customer Information
@@ -328,6 +386,10 @@ export function getCustomerInvoiceHtml(order: any) {
             </thead>
             <tbody>
               ${garmentsRows}
+              <tr class="garment-summary-total-row">
+                <td colspan="3" style="text-align:right;">Total Amount:</td>
+                <td>₹${total.toLocaleString('en-IN')}</td>
+              </tr>
             </tbody>
           </table>
         </div>

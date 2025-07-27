@@ -18,60 +18,85 @@ export function getTailorInvoiceHtml(order: any) {
 
   function renderDesignImages(design: any) {
     let images: string[] = [];
-    
-    // Canvas image (existing logic)
-    if (design?.canvasImage) {
-      if (typeof design.canvasImage === "string") {
-        if (design.canvasImage.startsWith("data:image/")) {
-          images.push(`<img src="${design.canvasImage}" alt="Canvas Drawing" class="canvas-image" />`);
-        } else if (design.canvasImage.startsWith("http")) {
-      images.push(`<img src="${design.canvasImage}" alt="Canvas Drawing" class="canvas-image" />`);
+    const urlSet = new Set<string>();
+    // Always include all designReferenceFiles (Cloudinary URLs)
+    if (Array.isArray(design?.designReferenceFiles)) {
+      design.designReferenceFiles.forEach((file: any) => {
+        if (file?.url && !urlSet.has(file.url)) {
+          images.push(`<img src="${file.url}" alt="Reference" class="canvas-image" />`);
+          urlSet.add(file.url);
+        }
+      });
     }
-      } else if (design.canvasImage && typeof design.canvasImage === "object") {
-        if (design.canvasImage.url) {
-          images.push(`<img src="${design.canvasImage.url}" alt="Canvas Drawing" class="canvas-image" />`);
-        } else if (design.canvasImage.secure_url) {
-          images.push(`<img src="${design.canvasImage.secure_url}" alt="Canvas Drawing" class="canvas-image" />`);
+    // Canvas image
+    if (design?.canvasImage && typeof design.canvasImage === 'string' && !urlSet.has(design.canvasImage)) {
+      images.push(`<img src="${design.canvasImage}" alt="Canvas Drawing" class="canvas-image" />`);
+      urlSet.add(design.canvasImage);
+    }
+    // Other possible image fields
+    const possibleArrays = [
+      design?.designReference,
+      design?.designReferencePreviews,
+      design?.uploadedImages,
+      design?.referenceImages,
+      design?.images
+    ];
+    possibleArrays.forEach(arr => {
+      if (Array.isArray(arr)) {
+        arr.forEach((img: any) => {
+          let url = '';
+          if (typeof img === 'string') url = img;
+          else if (img?.url) url = img.url;
+          else if (img?.secure_url) url = img.secure_url;
+          if (url && !urlSet.has(url)) {
+            images.push(`<img src="${url}" alt="Reference" class="canvas-image" />`);
+            urlSet.add(url);
+          }
+        });
+      }
+    });
+    // Single image fields
+    [design?.uploadedImage, design?.referenceImage].forEach(img => {
+      let url = '';
+      if (typeof img === 'string') url = img;
+      else if (img?.url) url = img.url;
+      else if (img?.secure_url) url = img.secure_url;
+      if (url && !urlSet.has(url)) {
+        images.push(`<img src="${url}" alt="Reference" class="canvas-image" />`);
+        urlSet.add(url);
+      }
+    });
+    // Fallback: check for any image-like fields
+    Object.keys(design).forEach(key => {
+      if (key.toLowerCase().includes('image') && design[key]) {
+        const val = design[key];
+        if (Array.isArray(val)) {
+          val.forEach((img: any) => {
+            let url = '';
+            if (typeof img === 'string') url = img;
+            else if (img?.url) url = img.url;
+            else if (img?.secure_url) url = img.secure_url;
+            if (url && !urlSet.has(url)) {
+              images.push(`<img src="${url}" alt="Reference" class="canvas-image" />`);
+              urlSet.add(url);
+            }
+          });
+        } else {
+          let url = '';
+          if (typeof val === 'string') url = val;
+          else if (val?.url) url = val.url;
+          else if (val?.secure_url) url = val.secure_url;
+          if (url && !urlSet.has(url)) {
+            images.push(`<img src="${url}" alt="Reference" class="canvas-image" />`);
+            urlSet.add(url);
+          }
         }
       }
+    });
+    if (images.length === 0) {
+      images.push('<span style="color:#888">No images available</span>');
     }
-
-    // Collect all possible reference image arrays
-    const refs = [];
-    if (Array.isArray(design?.designReference)) refs.push(...design.designReference);
-    if (Array.isArray(design?.designReferenceFiles)) refs.push(...design.designReferenceFiles);
-    if (Array.isArray(design?.designReferencePreviews)) refs.push(...design.designReferencePreviews);
-    if (Array.isArray(design?.uploadedImages)) refs.push(...design.uploadedImages);
-    if (Array.isArray(design?.referenceImages)) refs.push(...design.referenceImages);
-    if (Array.isArray(design?.images)) refs.push(...design.images);
-
-    // Also check for single image objects
-    if (design?.uploadedImage && (typeof design.uploadedImage === 'string' || typeof design.uploadedImage === 'object')) refs.push(design.uploadedImage);
-    if (design?.referenceImage && (typeof design.referenceImage === 'string' || typeof design.referenceImage === 'object')) refs.push(design.referenceImage);
-
-    // Process all refs
-    const refImages = refs
-        .map((img, idx) => {
-        if (typeof img === "string") {
-          if (img.startsWith("http")) {
-            return `<img src="${img}" alt="Reference ${idx + 1}" class="canvas-image" />`;
-          } else if (img.startsWith("data:image/")) {
-            return `<img src="${img}" alt="Reference ${idx + 1}" class="canvas-image" />`;
-          }
-        }
-        if (img && typeof img === "object") {
-          if (img.url) {
-            return `<img src="${img.url}" alt="Reference ${idx + 1}" class="canvas-image" />`;
-          } else if (img.secure_url) {
-            return `<img src="${img.secure_url}" alt="Reference ${idx + 1}" class="canvas-image" />`;
-          }
-        }
-          return "";
-        })
-      .filter(Boolean);
-
-    images = images.concat(refImages);
-    return images.length > 0 ? images.join("") : "<span>No images available</span>";
+    return images.join("");
   }
 
   function formatDisplayDate(dateStr: string | undefined) {

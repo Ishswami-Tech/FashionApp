@@ -7,24 +7,28 @@ import Header from '@/components/ui/Header';
 
 export const metadata: Metadata = {
   title: {
-    default: "Sony Fashion - Premium Custom Tailoring & Designer Wear",
+    default: "Sony Fashion - Custom Tailoring & Designer Wear",
     template: "%s | Sony Fashion",
   },
   description:
-    "Premium custom tailoring, designer kurtis, saree blouses, and party dresses. Expert craftsmanship with perfect fitting. Visit Sony Fashion for your dream wardrobe.",
+    "Custom tailoring, designer kurtis, saree blouses, and party dresses in Pune. Perfect fit, premium fabrics, expert craftsmanship.",
   keywords:
-    "custom tailoring, designer kurtis, saree blouses, party dresses, fashion studio, measurements, premium fabrics, Pune fashion, Sony Fashion",
-  authors: [{ name: "Sony Fashion" }],
-  creator: "Sony Fashion",
-  publisher: "Sony Fashion",
-  metadataBase: new URL("https://sonyfashion.in"),
-  alternates: {
-    canonical: "/",
+    "custom tailoring, designer kurtis, saree blouses, party dresses, fashion studio, Pune, Sony Fashion",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
   openGraph: {
-    title: "Sony Fashion - Premium Custom Tailoring & Designer Wear",
+    title: "Sony Fashion - Custom Tailoring & Designer Wear",
     description:
-      "Premium custom tailoring, designer kurtis, saree blouses, and party dresses. Expert craftsmanship with perfect fitting.",
+      "Custom tailoring, designer kurtis, saree blouses, and party dresses in Pune. Perfect fit, premium fabrics, expert craftsmanship.",
     url: "/",
     siteName: "Sony Fashion",
     images: [
@@ -32,7 +36,7 @@ export const metadata: Metadata = {
         url: "/og-image.webp",
         width: 1200,
         height: 630,
-        alt: "Sony Fashion - Premium Custom Tailoring",
+        alt: "Sony Fashion - Custom Tailoring",
       },
     ],
     locale: "en_US",
@@ -40,21 +44,17 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sony Fashion - Premium Custom Tailoring & Designer Wear",
+    title: "Sony Fashion - Custom Tailoring & Designer Wear",
     description:
-      "Premium custom tailoring, designer kurtis, saree blouses, and party dresses. Expert craftsmanship with perfect fitting.",
+      "Custom tailoring, designer kurtis, saree blouses, and party dresses in Pune. Perfect fit, premium fabrics, expert craftsmanship.",
     images: ["/og-image.webp"],
   },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
+  authors: [{ name: "Sony Fashion" }],
+  creator: "Sony Fashion",
+  publisher: "Sony Fashion",
+  metadataBase: new URL("https://sonyfashion.in"),
+  alternates: {
+    canonical: "/",
   },
   verification: {
     google: "your-google-verification-code",
@@ -75,6 +75,9 @@ export default function WebsiteLayout({
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
+        <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+        <link rel="robots" href="/robots.txt" />
+        <meta name="robots" content="index, follow" />
         
         {/* Performance optimizations */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

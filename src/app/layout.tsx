@@ -8,13 +8,13 @@ import QueryProvider from "@/app/providers/QueryProvider";
 
 export const metadata: Metadata = {
   title: {
-    default: "Sony Fashion - Custom Tailoring, Orders & Designs",
+    default: "Sony Fashion - Tailoring & Orders",
     template: "%s | Sony Fashion",
   },
   description:
-    "Sony Fashion: Premium custom tailoring, order management, and unique design solutions. Modern, responsive, and accessible for all your fashion needs.",
+    "Sony Fashion: Custom tailoring, order management, and unique design solutions in Pune. Modern, responsive, and accessible.",
   keywords:
-    "sony fashion, tailoring, custom design, order, clothing, boutique, dressmaking, online fashion, style, designer, measurements, delivery, payment",
+    "sony fashion, tailoring, custom design, order, clothing, boutique, dressmaking, online fashion, style, designer, measurements, delivery, payment, Pune",
   authors: [{ name: "Sony Fashion" }],
   creator: "Sony Fashion",
   publisher: "Sony Fashion",
@@ -23,9 +23,9 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "Sony Fashion - Custom Tailoring, Orders & Designs",
+    title: "Sony Fashion - Tailoring & Orders",
     description:
-      "Sony Fashion: Premium custom tailoring, order management, and unique design solutions. Modern, responsive, and accessible for all your fashion needs.",
+      "Sony Fashion: Custom tailoring, order management, and unique design solutions in Pune. Modern, responsive, and accessible.",
     url: "/",
     siteName: "Sony Fashion",
     images: [
@@ -41,9 +41,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sony Fashion - Custom Tailoring, Orders & Designs",
+    title: "Sony Fashion - Tailoring & Orders",
     description:
-      "Sony Fashion: Premium custom tailoring, order management, and unique design solutions. Modern, responsive, and accessible for all your fashion needs.",
+      "Sony Fashion: Custom tailoring, order management, and unique design solutions in Pune. Modern, responsive, and accessible.",
     images: ["/og-image.jpg"],
   },
   robots: {
@@ -86,6 +86,9 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
+        <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+        <link rel="robots" href="/robots.txt" />
+        <meta name="robots" content="index, follow" />
       </head>
       <body className="antialiased" style={{ fontFamily: 'system-ui, sans-serif' }}>
         <Toaster richColors />

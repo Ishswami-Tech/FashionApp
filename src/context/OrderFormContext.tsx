@@ -412,6 +412,11 @@ export const OrderFormProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     measurementForm.reset({ measurements: {} });
   };
 
+  // --- Back Step Handler ---
+  const handleBack = () => {
+    setStep((prev) => (prev > 1 ? prev - 1 : 1));
+  };
+
   // --- Start New Order Handler ---
   const handleStartNewOrder = () => {
     setStep(1);
@@ -437,6 +442,7 @@ export const OrderFormProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       advanceAmount: 0,
       specialInstructions: "",
     });
+    // Only clear localStorage on new order
     localStorage.removeItem("orderFormState");
   };
 
@@ -524,6 +530,7 @@ export const OrderFormProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         handleRemoveGarment,
         orderFormReset,
         measurementFormReset,
+        handleBack,
         handleStartNewOrder,
       }}
     >

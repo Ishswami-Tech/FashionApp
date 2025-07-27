@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "../ui/table";
+import { useEffect } from "react";
 
 // Enhanced Stepper Component with better accessibility
 function EnhancedStepper() {
@@ -156,7 +157,9 @@ const CustomerInfoStep = () => {
     setCustomerData, 
     setStep, 
     submitLoading, 
-    submitError 
+    submitError, 
+    handleBack,
+    step
   } = useOrderFormContext();
   
   const form = useForm({
@@ -223,6 +226,11 @@ const CustomerInfoStep = () => {
             error={submitError}
           />
         </CardContent>
+        {step > 1 && (
+          <Button type="button" variant="outline" onClick={handleBack} className="mt-4 w-full">
+            ← Back
+          </Button>
+        )}
       </Card>
     </div>
   );
@@ -259,6 +267,7 @@ const OrderDetailsStep = () => {
     orderFormReset,
     measurementFormReset,
     setEditingIndex,
+    step
   } = useOrderFormContext();
 
   // Memoize the submit handler to prevent recreation on every render
@@ -383,6 +392,11 @@ const OrderDetailsStep = () => {
             </CardContent>
           </Card>
         )}
+        {step > 1 && (
+          <Button type="button" variant="outline" onClick={handleBack} className="mt-4 w-full">
+            ← Back
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -399,6 +413,8 @@ const DeliveryPaymentStep = () => {
     garments,
     customerData,
     progressStates,
+    handleBack,
+    step
   } = useOrderFormContext();
 
   const totalAmount = React.useMemo(() => 
@@ -590,7 +606,7 @@ const DeliveryPaymentStep = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setStep(2)}
+                onClick={handleBack}
                 className="flex items-center gap-2"
                 disabled={submitLoading}
               >
@@ -616,6 +632,8 @@ const OrderConfirmationStep = () => {
     deliveryForm,
     handleStartNewOrder,
     setStep,
+    handleBack,
+    step
   } = useOrderFormContext();
 
   const [modalImage, setModalImage] = React.useState<string | null>(null);
@@ -764,7 +782,7 @@ const OrderConfirmationStep = () => {
     toast.loading(`Generating ${type} PDF...`, { id: `pdf-${type}-${action}` });
     
     try {
-      const url = `/api/proxy-pdf?type=${type}&oid=${orderOid}`;
+    const url = `/api/proxy-pdf?type=${type}&oid=${orderOid}`;
       
       const response = await fetch(url, {
         method: 'POST',
@@ -1272,6 +1290,28 @@ const OrderConfirmationStep = () => {
 };
 
 export function OrderFormSteps() {
+  const { step, handleBack } = useOrderFormContext();
+
+  useEffect(() => {
+    // Push a dummy state so the first back press is intercepted
+    if (window.history.state === null) {
+      window.history.pushState({ orderForm: true }, "");
+    }
+    const onPopState = (e: PopStateEvent) => {
+      if (step > 1) {
+        handleBack();
+        // Push state again so further back presses are intercepted
+        window.history.pushState({ orderForm: true }, "");
+      } else {
+        // Allow default navigation if on first step
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, [step, handleBack]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <EnhancedStepper />

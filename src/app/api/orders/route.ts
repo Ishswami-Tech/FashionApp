@@ -555,46 +555,50 @@ export async function POST(req: NextRequest) {
         generateSinglePDF('customer', updatedOrder),
         generateSinglePDF('tailor', updatedOrder)
       ];
-      
       const [customerResult, tailorResult] = await Promise.allSettled(pdfPromises);
-      
       if (customerResult.status === 'fulfilled') {
         customerInvoiceUrl = customerResult.value;
         console.log('[API] Customer PDF generated and uploaded:', customerInvoiceUrl);
       } else {
         console.error('[API] Customer PDF generation failed:', customerResult.reason);
       }
-      
       if (tailorResult.status === 'fulfilled') {
         tailorInvoiceUrl = tailorResult.value;
         console.log('[API] Tailor PDF generated and uploaded:', tailorInvoiceUrl);
       } else {
         console.error('[API] Tailor PDF generation failed:', tailorResult.reason);
       }
-      
+      // If either PDF failed, return error and do not send WhatsApp
+      if (!customerInvoiceUrl || !tailorInvoiceUrl) {
+        return NextResponse.json({
+          success: false,
+          error: 'PDF generation failed. Please try again or contact support.',
+          customerPdf: customerInvoiceUrl,
+          tailorPdf: tailorInvoiceUrl
+        }, { status: 500 });
+      }
       // Update order with PDF URLs
       const updateData: any = {
         pdfsGenerated: true,
         pdfsGeneratedAt: new Date()
       };
-      
       if (customerInvoiceUrl) {
         updateData.customerInvoiceUrl = customerInvoiceUrl;
       }
       if (tailorInvoiceUrl) {
         updateData.tailorInvoiceUrl = tailorInvoiceUrl;
       }
-      
       await db.collection("orders").updateOne(
         { oid },
         { $set: updateData }
       );
-      
       console.log('[API] Order updated with PDF URLs');
-      
     } catch (pdfError) {
       console.error('[API] PDF generation failed:', pdfError);
-      // Continue with order submission even if PDF generation fails
+      return NextResponse.json({
+        success: false,
+        error: 'PDF generation failed. Please try again or contact support.'
+      }, { status: 500 });
     }
     
     // Fetch updated order

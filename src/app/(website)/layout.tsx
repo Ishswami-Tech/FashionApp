@@ -1,20 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "../globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import QueryProvider from "@/app/providers/QueryProvider";
 import React from "react";
 import Header from '@/components/ui/Header';
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: {
@@ -96,7 +85,7 @@ export default function WebsiteLayout({
         <link rel="preload" href="/gallery/design1.webp" as="image" />
         <link rel="preload" href="/gallery/design2.webp" as="image" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className="antialiased" style={{ fontFamily: 'system-ui, sans-serif' }}>
         <Toaster richColors />
         <Header />
         <QueryProvider>{children}</QueryProvider>

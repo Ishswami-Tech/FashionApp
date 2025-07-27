@@ -2,32 +2,76 @@
 // This function is used by both order creation and PDF generation endpoints
 
 export function getTailorInvoiceHtml(order: any) {
-  const garmentsData = order.garments || [];
-  const deliveryData = order;
-  const paymentMethod = deliveryData.payment || '';
-  const advanceAmount = order.advanceAmount ? Number(order.advanceAmount) : 0;
-  const dueAmount = order.dueAmount !== undefined ? Number(order.dueAmount) : undefined;
-  const orderIdValue = order.oid;
+  // Robust data extraction with comprehensive fallbacks
+  const garmentsData = Array.isArray(order?.garments) ? order.garments : [];
+  const deliveryData = order || {};
+  
+  // Ensure numeric values are properly parsed
+  const paymentMethod = deliveryData?.payment || 'Cash on Delivery';
+  const advanceAmount = typeof order?.advanceAmount === 'number' ? order.advanceAmount :
+                       typeof order?.advanceAmount === 'string' ? parseFloat(order.advanceAmount) || 0 : 0;
+  const dueAmount = typeof order?.dueAmount === 'number' ? order.dueAmount :
+                   typeof order?.dueAmount === 'string' ? parseFloat(order.dueAmount) : undefined;
+  const orderIdValue = order?.oid || 'N/A';
+  
+  console.log(`[Tailor Invoice] Processing order ${orderIdValue} with ${garmentsData.length} garments`);
 
   function renderDesignImages(design: any) {
     let images: string[] = [];
-    if (design && design.canvasImage && typeof design.canvasImage === "string" && design.canvasImage.startsWith("data:image/")) {
+    
+    // Canvas image (existing logic)
+    if (design?.canvasImage) {
+      if (typeof design.canvasImage === "string") {
+        if (design.canvasImage.startsWith("data:image/")) {
+          images.push(`<img src="${design.canvasImage}" alt="Canvas Drawing" class="canvas-image" />`);
+        } else if (design.canvasImage.startsWith("http")) {
       images.push(`<img src="${design.canvasImage}" alt="Canvas Drawing" class="canvas-image" />`);
     }
-    const refs = [
-      ...(Array.isArray(design?.designReference) ? design.designReference : []),
-      ...(Array.isArray(design?.designReferenceFiles) ? design.designReferenceFiles : []),
-    ];
-    images = images.concat(
-      refs
+      } else if (design.canvasImage && typeof design.canvasImage === "object") {
+        if (design.canvasImage.url) {
+          images.push(`<img src="${design.canvasImage.url}" alt="Canvas Drawing" class="canvas-image" />`);
+        } else if (design.canvasImage.secure_url) {
+          images.push(`<img src="${design.canvasImage.secure_url}" alt="Canvas Drawing" class="canvas-image" />`);
+        }
+      }
+    }
+
+    // Collect all possible reference image arrays
+    const refs = [];
+    if (Array.isArray(design?.designReference)) refs.push(...design.designReference);
+    if (Array.isArray(design?.designReferenceFiles)) refs.push(...design.designReferenceFiles);
+    if (Array.isArray(design?.designReferencePreviews)) refs.push(...design.designReferencePreviews);
+    if (Array.isArray(design?.uploadedImages)) refs.push(...design.uploadedImages);
+    if (Array.isArray(design?.referenceImages)) refs.push(...design.referenceImages);
+    if (Array.isArray(design?.images)) refs.push(...design.images);
+
+    // Also check for single image objects
+    if (design?.uploadedImage && (typeof design.uploadedImage === 'string' || typeof design.uploadedImage === 'object')) refs.push(design.uploadedImage);
+    if (design?.referenceImage && (typeof design.referenceImage === 'string' || typeof design.referenceImage === 'object')) refs.push(design.referenceImage);
+
+    // Process all refs
+    const refImages = refs
         .map((img, idx) => {
-          if (typeof img === "string") return `<img src="${img}" alt="Reference ${idx + 1}" class="canvas-image" />`;
-          if (img && img.url) return `<img src="${img.url}" alt="Reference ${idx + 1}" class="canvas-image" />`;
+        if (typeof img === "string") {
+          if (img.startsWith("http")) {
+            return `<img src="${img}" alt="Reference ${idx + 1}" class="canvas-image" />`;
+          } else if (img.startsWith("data:image/")) {
+            return `<img src="${img}" alt="Reference ${idx + 1}" class="canvas-image" />`;
+          }
+        }
+        if (img && typeof img === "object") {
+          if (img.url) {
+            return `<img src="${img.url}" alt="Reference ${idx + 1}" class="canvas-image" />`;
+          } else if (img.secure_url) {
+            return `<img src="${img.secure_url}" alt="Reference ${idx + 1}" class="canvas-image" />`;
+          }
+        }
           return "";
         })
-        .filter(Boolean)
-    );
-    return images.length > 0 ? images.join("") : "<span>No images</span>";
+      .filter(Boolean);
+
+    images = images.concat(refImages);
+    return images.length > 0 ? images.join("") : "<span>No images available</span>";
   }
 
   function formatDisplayDate(dateStr: string | undefined) {
@@ -64,20 +108,64 @@ export function getTailorInvoiceHtml(order: any) {
 <body>
   <div class="main-container">
     <div class="order-id" style="font-size:20px;font-weight:bold;">Order ID: ${orderIdValue}</div>
-    ${garmentsData.map((garment: any, gIdx: number) => `
+    ${garmentsData.map((garment: any, gIdx: number) => {
+      const totalQty = (garment.quantity || 1) * (Array.isArray(garment.designs) && garment.designs.length > 0 ? garment.designs.length : 1);
+      const qty = Array.isArray(garment.designs) ? garment.designs.length : (garment.quantity || 1);
+      return `
       <div class="garment-section">
         <div class="garment-title">Garment ${gIdx + 1}: ${garment.order?.orderType || ""} ${garment.variant ? `- ${garment.variant}` : ""}</div>
         <div class="two-col">
           <div>
             <div class="section-title">Measurements</div>
             <ul class="measurement-list">
-              ${garment.measurement && garment.measurement.measurements && Object.keys(garment.measurement.measurements).length > 0
-                ? Object.entries(garment.measurement.measurements)
-                    .map(
-                      ([key, value]) => `<li><span class="measurement-label">${key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}:</span> <span class="measurement-value">${value}</span></li>`
-                    )
-                    .join("")
-                : "<li>No measurements</li>"}
+              ${(() => {
+                // Enhanced robust measurement extraction with comprehensive logging
+                let measurements = {};
+                let measurementSource = 'none';
+                
+                // Try different measurement structures with logging
+                if (garment?.measurement?.measurements && typeof garment.measurement.measurements === 'object') {
+                  measurements = garment.measurement.measurements;
+                  measurementSource = 'garment.measurement.measurements';
+                } else if (garment?.measurements && typeof garment.measurements === 'object') {
+                  measurements = garment.measurements;
+                  measurementSource = 'garment.measurements';
+                } else if (garment?.measurement && typeof garment.measurement === 'object') {
+                  measurements = garment.measurement;
+                  measurementSource = 'garment.measurement';
+                }
+                
+                console.log(`[Tailor Invoice] Garment ${gIdx + 1} measurements from: ${measurementSource}`);
+                console.log(`[Tailor Invoice] Raw measurements:`, measurements);
+                
+                // Filter and format measurements
+                const validMeasurements = Object.entries(measurements)
+                  .filter(([key, value]) => {
+                    // Skip empty values and file references
+                    if (!value || value === '') return false;
+                    if (key === 'canvasImageFile' || key === 'voiceNoteFile' || key === 'canvasImage') return false;
+                    if (typeof value === 'object') return false; // Skip objects
+                    return true;
+                  })
+                  .map(([key, value]) => {
+                    // Format the key for display
+                    const label = key
+                      .replace(/([A-Z])/g, " $1") // Add space before capital letters
+                      .replace(/^./, (str) => str.toUpperCase()) // Capitalize first letter
+                      .replace(/\s+/g, ' ') // Clean up multiple spaces
+                      .trim();
+                    
+                    return `<li><span class="measurement-label">${label}:</span> <span class="measurement-value">${value}</span></li>`;
+                  });
+                
+                console.log(`[Tailor Invoice] Valid measurements count: ${validMeasurements.length}`);
+                
+                if (validMeasurements.length > 0) {
+                  return validMeasurements.join("");
+                } else {
+                  return "<li>No measurements available</li>";
+                }
+              })()}
             </ul>
           </div>
           <div>
@@ -104,7 +192,7 @@ export function getTailorInvoiceHtml(order: any) {
             <div class="work-instructions">
               <div style="font-weight:bold; margin-bottom:4px;">Work Instructions</div>
               <div>• ${garment.order?.orderType || ""} ${garment.variant ? `in ${garment.variant} variant` : ""}</div>
-              <div>• Quantity: ${garment.order?.quantity || ""}</div>
+              <div>• Quantity: ${totalQty}</div>
               <div>• Urgency: ${garment.order?.urgency || ""}</div>
               <div>• Follow the design references provided</div>
               <div>• Use the exact measurements provided</div>
@@ -114,7 +202,8 @@ export function getTailorInvoiceHtml(order: any) {
           </div>
         </div>
       </div>
-    `).join("")}
+    `;
+    }).join("")}
   </div>
 </body>
 </html>`;

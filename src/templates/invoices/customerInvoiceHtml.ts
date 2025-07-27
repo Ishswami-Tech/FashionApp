@@ -2,12 +2,19 @@
 // This function is used by both order creation and PDF generation endpoints
 
 export function getCustomerInvoiceHtml(order: any) {
-  const customerData = order;
-  const garmentsData = order.garments || [];
-  const deliveryData = order;
-  const orderTotalAmount = parseFloat(order.totalAmount || 0);
-  const currentDate = order.orderDate || new Date().toLocaleDateString();
-  const orderId = order.oid || '';
+  // Robust data extraction with fallbacks
+  const customerData = order || {};
+  const garmentsData = Array.isArray(order?.garments) ? order.garments : [];
+  const deliveryData = order || {};
+  
+  // Ensure numeric values are properly parsed
+  const orderTotalAmount = typeof order?.totalAmount === 'number' ? order.totalAmount : 
+                          typeof order?.totalAmount === 'string' ? parseFloat(order.totalAmount) || 0 : 0;
+  
+  const currentDate = order?.orderDate || new Date().toLocaleDateString();
+  const orderId = order?.oid || 'N/A';
+  
+  console.log(`[Customer Invoice] Processing order ${orderId} with ${garmentsData.length} garments`);
 
   // Format date for display (e.g., July 20, 2025)
   function formatDisplayDate(dateStr: string) {
@@ -17,28 +24,49 @@ export function getCustomerInvoiceHtml(order: any) {
     return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
   }
 
-  // Build garments table rows
+  // At the start of the garment summary rendering, filter out garments with no designs:
+  const validGarments = Array.isArray(order.garments) ? order.garments.filter((g: any) => Array.isArray(g.designs) && g.designs.length > 0) : [];
+  if (validGarments.length === 0) {
+    return `<div style='color:red;font-weight:bold;padding:32px;text-align:center;'>No garments/designs found for this order.</div>`;
+  }
+
+  // Build garments table rows with robust data handling
   let garmentsRows = '';
   let subtotal = 0;
   let totalQuantity = 0;
-  garmentsData.forEach((garment: any) => {
-    const itemName = garment.order?.orderType || garment.name || 'Custom Garment';
-    const type = garment.variant || garment.type || '-';
-    const quantity = garment.order?.quantity || garment.quantity || 1;
+  
+  validGarments.forEach((garment: any, idx: number) => {
+    // Robust garment data extraction
+    const itemName = garment?.order?.orderType || garment?.name || garment?.orderType || 'Custom Garment';
+    const type = garment?.variant || garment?.type || '-';
+    const qty = garment.designs.length;
+    
+    // Calculate price with multiple fallbacks
     let price = 0;
-    if (Array.isArray(garment.designs)) {
-      price = garment.designs.reduce((sum: number, d: any) => sum + (parseFloat(d.amount) || 0), 0);
-    } else if (garment.amount) {
+    if (Array.isArray(garment?.designs)) {
+      price = garment.designs.reduce((sum: number, d: any) => {
+        const amount = typeof d?.amount === 'number' ? d.amount :
+                      typeof d?.amount === 'string' ? parseFloat(d.amount) || 0 : 0;
+        return sum + amount;
+      }, 0);
+    } else if (typeof garment?.amount === 'number') {
+      price = garment.amount;
+    } else if (typeof garment?.amount === 'string') {
       price = parseFloat(garment.amount) || 0;
     }
-    subtotal += price * quantity;
-    totalQuantity += quantity;
+    
+    const itemTotal = price * qty;
+    subtotal += itemTotal;
+    totalQuantity += qty;
+    
+    console.log(`[Customer Invoice] Garment ${idx + 1}: ${itemName} - ${type} x${qty} = ₹${itemTotal}`);
+    
     garmentsRows += `
       <tr>
         <td>${itemName}</td>
         <td>${type}</td>
-        <td>${quantity}</td>
-        <td>₹${(price * quantity).toLocaleString('en-IN')}</td>
+        <td>${qty}</td>
+        <td>₹${itemTotal.toLocaleString('en-IN')}</td>
       </tr>`;
   });
 
@@ -70,8 +98,8 @@ export function getCustomerInvoiceHtml(order: any) {
   const status = 'Order Confirmed';
 
   // Shop info (footer)
-  const shopAddress = '456 Fashion Street, Mumbai';
-  const shopPhone = '+91 12345 67890';
+  const shopAddress = 'Shop No 13, Tulsi Ramsukh Market, Tulshibaug, Near Rupee Bank Near Tulsi Baug Ganpati Mandir, Laxmi Road, Budhwar Peth-411002';
+  const shopPhone = '+91 986009677 / +91 93716 57322';
   const shopEmail = 'info@sonyfashion.com';
 
   return `<!DOCTYPE html>

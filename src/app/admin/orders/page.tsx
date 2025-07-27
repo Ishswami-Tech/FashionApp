@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, ChangeEvent } from "react";
+import { useQueryData } from "@/hooks/useQueryData";
 
 // --- Types ---
 type FileData = {
@@ -876,39 +877,36 @@ function formatDisplayDate(dateStr?: string) {
 }
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Remove useState for orders, loading, error
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [modalImg, setModalImg] = useState<{ src: string; alt: string } | null>(
-    null
-  );
+  const [modalImg, setModalImg] = useState<{ src: string; alt: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 10;
 
+  // Use useQueryData for fetching orders
+  const { data, isPending, isFetched, isFetching, refetch } = useQueryData(
+    ["admin-orders"],
+    () => fetch("/api/admin/orders").then(res => res.json())
+  );
+  const orders = data?.orders || [];
+  const loading = isPending;
+  const error = data?.error;
+
   useEffect(() => {
-    fetch("/api/admin/orders")
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Fetched orders:", data.orders);
-        // Sort by creation date (most recent first) and limit to recent orders
-        const sortedOrders = (data.orders || [])
-          .sort((a: Order, b: Order) => {
-            const dateA = new Date(a.createdAt || 0);
-            const dateB = new Date(b.createdAt || 0);
-            return dateB.getTime() - dateA.getTime();
-          })
-          .slice(0, 50); // Show only last 50 orders
-        setOrders(sortedOrders);
-        setLoading(false);
+    // Sort by creation date (most recent first) and limit to recent orders
+    const sortedOrders = (orders || [])
+      .sort((a: Order, b: Order) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB.getTime() - dateA.getTime();
       })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, []);
+      .slice(0, 50); // Show only last 50 orders
+    // setOrders(sortedOrders); // This state is removed
+    // setLoading(false); // This state is removed
+    // setError(null); // This state is removed
+  }, [orders]); // Dependency array updated
 
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
@@ -929,7 +927,7 @@ export default function AdminOrdersPage() {
     setExpanded(null); // Close expanded cards when changing pages
   };
 
-  const filteredOrders = orders.filter((order) => {
+  const filteredOrders = orders.filter((order: Order) => {
     const q = search.toLowerCase();
     const dateMatch = !dateFilter || order.orderDate === dateFilter;
 
@@ -943,9 +941,8 @@ export default function AdminOrdersPage() {
       (order.contactNumber && order.contactNumber.includes(q)) ||
       (order.oid && order.oid.toLowerCase().includes(q)) ||
       (order.garments &&
-        order.garments.some(
-          (g) =>
-            g.order?.orderType && g.order.orderType.toLowerCase().includes(q)
+        order.garments.some((g: Garment) =>
+          g.order?.orderType && g.order.orderType.toLowerCase().includes(q)
         ))
     );
   });
@@ -1036,7 +1033,7 @@ export default function AdminOrdersPage() {
           {currentOrders.length === 0 ? (
             <EmptyState />
           ) : (
-            currentOrders.map((order, idx) => (
+            currentOrders.map((order: Order, idx: number) => (
               <OrderCard
                 key={order._id || idx}
                 order={order}

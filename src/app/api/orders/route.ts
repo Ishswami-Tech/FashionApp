@@ -136,6 +136,71 @@ async function uploadBufferToCloudinary(buffer, filename, mimetype) {
 
 const inMemoryOrderSequence = {};
 
+// Generate single PDF and upload to Cloudinary
+async function generateSinglePDF(type: 'customer' | 'tailor', order: any) {
+  try {
+    console.log(`[API] Generating ${type} PDF for order: ${order.oid}`);
+    
+    // Generate HTML based on type
+    let html;
+    switch (type) {
+      case 'customer':
+        html = getCustomerInvoiceHtml(order);
+        break;
+      case 'tailor':
+        html = getTailorInvoiceHtml(order);
+        break;
+      default:
+        throw new Error(`Invalid PDF type: ${type}`);
+    }
+    
+    if (!html || html.trim().length === 0) {
+      throw new Error(`HTML generation failed for ${type} PDF`);
+    }
+    
+    // Generate PDF
+    const pdfBuffer = await generatePdf(html);
+    if (!pdfBuffer || pdfBuffer.length === 0) {
+      throw new Error(`PDF generation failed for ${type} PDF`);
+    }
+    
+    // Set up Cloudinary folder structure
+    const yyyy = order.oid.substring(0, 4);
+    const mm = order.oid.substring(4, 6);
+    const dd = order.oid.substring(6, 8);
+    const dateFolder = `${dd}-${mm}-${yyyy}`;
+    const folder = `invoices/${dateFolder}/${order.oid}`;
+    
+    // Upload to Cloudinary
+    const uploadResult = await new Promise<any>((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { 
+          resource_type: 'raw', 
+          public_id: type, 
+          folder, 
+          format: 'pdf',
+          overwrite: true
+        },
+        (error, result) => {
+          if (error) {
+            console.error(`[API] Cloudinary upload error for ${type} PDF:`, error);
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        }
+      ).end(pdfBuffer);
+    });
+    
+    console.log(`[API] ${type} PDF uploaded to Cloudinary: ${uploadResult.secure_url}`);
+    return uploadResult.secure_url;
+    
+  } catch (error) {
+    console.error(`[API] Failed to generate ${type} PDF:`, error);
+    throw error;
+  }
+}
+
 async function getRobustOrderId(db, date, client, orderData) {
   const dd = String(date.getDate()).padStart(2, '0');
   const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -244,9 +309,18 @@ async function getRobustOrderId(db, date, client, orderData) {
 
 export async function POST(req: NextRequest) {
   try {
+    // Add timeout to prevent hanging requests
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout after 60 seconds')), 60000);
+    });
+    
     // 1. Parse form data
-    const { fields, files } = await parseFormWithBusboy(req);
-    console.log('Parsed files:', files); // LOG parsed files
+    const parsePromise = parseFormWithBusboy(req);
+    const { fields, files } = await Promise.race([parsePromise, timeoutPromise]);
+    console.log('Parsed fields:', Object.keys(fields));
+    console.log('Parsed files:', Object.keys(files));
+    console.log('Files count:', Object.keys(files).length);
+    console.log('Sample files:', files);
     const now = new Date();
     const formattedDate = formatDate(now);
     const client = await clientPromise;
@@ -275,63 +349,136 @@ export async function POST(req: NextRequest) {
     // 4. Generate robust order ID before the garments loop
     const { oid } = await getRobustOrderId(db, now, client, {}); // Destructure to get oid string
 
-    // 3. For each garment, attach file Buffers (canvasImage, designReference, voiceNote) if present
+    // 3. Process all garments in parallel for faster uploads
     const dateFolder = formattedDate.replace(/\//g, '-'); // e.g. 11-07-2025
-    for (let i = 0; i < garments.length; i++) {
-      const garment = garments[i];
+    
+    // Process all garments in parallel with better error handling
+    const processedGarments = await Promise.all(garments.map(async (garment, i) => {
+      try {
       const measurement = garment.measurement || {};
       const garmentType = (garment.order?.orderType || 'GARMENT').replace(/\s+/g, '').toUpperCase();
       const orderSeq = oid.split('-').pop() || '000';
       const garmentIndex = i + 1;
+      
       // Upload canvasImage file to Cloudinary if present
       if (files[`canvasImage_${i}`]) {
-        const file = files[`canvasImage_${i}`];
-        console.log(`Uploading canvasImage for garment ${i}:`, file);
-        if (!file.mimetype) file.mimetype = 'image/png';
-        const imageNum = 1;
+        const fileArray = Array.isArray(files[`canvasImage_${i}`]) ? files[`canvasImage_${i}`] : [files[`canvasImage_${i}`]];
+        console.log(`Uploading canvasImage for garment ${i}:`, fileArray);
+        
+        // Process each file in the array
+        const uploadedFiles = [];
+        for (let fileIndex = 0; fileIndex < fileArray.length; fileIndex++) {
+          const file = fileArray[fileIndex];
+          
+          // Ensure mimetype is set and check buffer
+          const mimetype = file.mimetype || 'image/png';
+          console.log(`Using mimetype: ${mimetype} for canvasImage_${i}_${fileIndex}`);
+          
+          // Check if buffer is valid
+          if (!file.buffer || file.buffer.length === 0) {
+            console.warn(`Empty buffer for canvasImage_${i}_${fileIndex}, skipping upload`);
+            continue;
+          }
+          
+          const imageNum = fileIndex + 1;
         const businessName = `ORD+${garmentType}+${orderSeq}+${garmentIndex}+CANVAS+${imageNum}`;
         const folder = `orders/${dateFolder}/${oid}`;
+          
+          try {
         const result = await new Promise((resolve, reject) => {
           cloudinary.uploader.upload_stream(
-            { resource_type: 'image', public_id: businessName.replace(/\+/g, '_'), folder },
+                { 
+                  resource_type: 'image', 
+                  public_id: businessName.replace(/\+/g, '_'), 
+                  folder,
+                  format: 'png' // Explicitly set format
+                },
             (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
+                  if (error) {
+                    console.error(`Cloudinary upload error for canvasImage_${i}_${fileIndex}:`, error);
+                    reject(error);
+                  } else {
+                    console.log(`Cloudinary upload success for canvasImage_${i}_${fileIndex}:`, result);
+                    resolve(result);
+                  }
             }
           ).end(file.buffer);
         });
-        console.log('Cloudinary canvasImage upload result:', result);
-        measurement.canvasImageFile = { url: result.secure_url, originalname: businessName };
+            uploadedFiles.push({ url: result.secure_url, originalname: businessName });
+          } catch (uploadError) {
+            console.error(`Failed to upload canvasImage_${i}_${fileIndex}:`, uploadError);
+          }
+        }
+        
+        // Set the first uploaded file as the main canvas image, or undefined if none uploaded
+        measurement.canvasImageFile = uploadedFiles.length > 0 ? uploadedFiles[0] : undefined;
       } else {
         measurement.canvasImageFile = undefined;
       }
+      
       // Upload designReference files to Cloudinary if present
-      // If this garment has designs, attach designReferenceFiles to each design
       if (Array.isArray(garment.designs)) {
-        for (let d = 0; d < garment.designs.length; d++) {
+        // Process all designs in parallel
+        const processedDesigns = await Promise.all(garment.designs.map(async (design, d) => {
           const designRefs = [];
+          const uploadPromises = [];
           let j = 0;
+          
+          // Collect all file upload promises for this design
           while (files[`designReference_${i}_${d}_${j}`]) {
             const file = files[`designReference_${i}_${d}_${j}`];
-            if (!file.mimetype) file.mimetype = 'image/png';
+            
+            // Check if buffer is valid
+            if (!file.buffer || file.buffer.length === 0) {
+              console.warn(`Empty buffer for designReference_${i}_${d}_${j}, skipping upload`);
+              j++;
+              continue;
+            }
+            
+            const fileMimetype = file.mimetype || 'image/png';
             const imageNum = j + 1;
             const businessName = `ORD+${garmentType}+${orderSeq}+${garmentIndex}+REF+${d + 1}+${imageNum}`;
             const folder = `orders/${dateFolder}/${oid}`;
-            const result = await new Promise((resolve, reject) => {
+            
+            const uploadPromise = new Promise((resolve, reject) => {
+              console.log(`Using mimetype: ${fileMimetype} for designReference_${i}_${d}_${j}`);
+              
               cloudinary.uploader.upload_stream(
-                { resource_type: 'image', public_id: businessName.replace(/\+/g, '_'), folder },
+                { 
+                  resource_type: 'image', 
+                  public_id: businessName.replace(/\+/g, '_'), 
+                  folder,
+                  format: 'png' // Explicitly set format
+                },
                 (error, result) => {
-                  if (error) reject(error);
-                  else resolve(result);
+                  if (error) {
+                    console.error(`Cloudinary upload error for designReference_${i}_${d}_${j}:`, error);
+                    reject(error);
+                  } else {
+                    console.log(`Cloudinary upload success for designReference_${i}_${d}_${j}:`, result);
+                    resolve({ url: result.secure_url, originalname: businessName });
+                  }
                 }
               ).end(file.buffer);
             });
-            designRefs.push({ url: result.secure_url, originalname: businessName });
+            
+            uploadPromises.push(uploadPromise);
             j++;
           }
-          garment.designs[d].designReferenceFiles = designRefs;
-        }
+          
+          // Wait for all uploads to complete
+          const results = await Promise.all(uploadPromises);
+          designRefs.push(...results);
+          
+          return {
+            ...design,
+            designReferenceFiles: designRefs
+          };
+        }));
+        
+        garment.designs = processedDesigns;
       }
+      
       // Voice notes: (optional) you can upload to Cloudinary as resource_type: 'video' or keep in MongoDB
       if (files[`voiceNote_${i}`]) {
         const file = files[`voiceNote_${i}`];
@@ -339,11 +486,27 @@ export async function POST(req: NextRequest) {
         // For now, skip uploading audio to Cloudinary (can be added if needed)
         // measurement.voiceNoteFile = file;
       }
+      
       garment.measurement = measurement;
-      garments[i] = garment;
+      return garment;
+    } catch (garmentError) {
+      console.error(`Error processing garment ${i}:`, garmentError);
+      // Return the garment without processed files if upload fails
+      return {
+        ...garment,
+        measurement: {
+          ...garment.measurement,
+          canvasImageFile: undefined
+        }
+      };
     }
+  }));
+    
+    // Replace garments with processed ones
+    garments = processedGarments;
 
     // 3. Build the order object (do not change structure)
+    console.log('[API] Building order object...');
     const totalAmount = garments.reduce((sum, garment) => {
       if (garment.designs && Array.isArray(garment.designs)) {
         return sum + garment.designs.reduce((dsum, design) => dsum + (parseFloat(design.amount) || 0), 0);
@@ -362,81 +525,85 @@ export async function POST(req: NextRequest) {
       advanceAmount: delivery.advanceAmount ? Number(delivery.advanceAmount) : 0,
       dueAmount: Math.max(0, totalAmount - Number(delivery.advanceAmount) || 0),
     };
+    
+    console.log('[API] Order object built successfully. Total amount:', totalAmount);
 
     // 5. Store in MongoDB (as before)
+    console.log('[API] Storing order in MongoDB...');
     const insertResult = await db.collection("orders").insertOne(order);
+    console.log('[API] Order stored in MongoDB with ID:', insertResult.insertedId);
 
     // Fetch the inserted order (with _id)
     const savedOrder = await db.collection("orders").findOne({ _id: insertResult.insertedId });
+    console.log('[API] Order fetched from MongoDB successfully');
 
-    // --- PDF Generation and Cloudinary Upload ---
-    const customerHtml = getCustomerInvoiceHtml(savedOrder);
-    const tailorHtml = getTailorInvoiceHtml(savedOrder);
+    // --- PDF Generation and Cloudinary Upload (Optimized) ---
+    console.log('[API] Starting PDF generation...');
     let customerPdf, tailorPdf;
     let pdfGenerationSuccess = false;
-    try {
-      [customerPdf, tailorPdf] = await Promise.all([
-        generatePdf(customerHtml),
-        generatePdf(tailorHtml),
-      ]);
-      pdfGenerationSuccess = true;
-    } catch (pdfError) {
-      console.error("PDF generation failed:", pdfError);
-      // Continue without PDFs - order will still be saved
-    }
-    
-    // Upload PDFs to Cloudinary only if generation was successful
     let customerUpload = null, tailorUpload = null;
-    if (pdfGenerationSuccess) {
-      try {
-        const dateFolder = formattedDate.replace(/\//g, '-');
-        const folder = `invoices/${dateFolder}/${oid}`;
-        
-        // Upload customer PDF
-        customerUpload = await new Promise((resolve, reject) => {
-          cloudinary.uploader.upload_stream(
-            { resource_type: 'raw', public_id: 'customer', folder, format: 'pdf' },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          ).end(customerPdf);
-        });
-        
-        // Upload tailor PDF
-        tailorUpload = await new Promise((resolve, reject) => {
-          cloudinary.uploader.upload_stream(
-            { resource_type: 'raw', public_id: 'tailor', folder, format: 'pdf' },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          ).end(tailorPdf);
-        });
-        
-        console.log("PDFs uploaded successfully to Cloudinary");
-      } catch (uploadError) {
-        console.error("PDF upload to Cloudinary failed:", uploadError);
-        // Continue without PDFs - order will still be saved
-      }
-    }
     
-    // Save URLs to order (only if uploads were successful)
-    const invoiceLinks = {};
-    if (customerUpload?.secure_url) invoiceLinks.customer = customerUpload.secure_url;
-    if (tailorUpload?.secure_url) invoiceLinks.tailor = tailorUpload.secure_url;
-    if (Object.keys(invoiceLinks).length > 0) {
+    // Generate PDFs during order processing for instant access
+    console.log('[API] Generating PDFs during order processing...');
+    
+    let customerInvoiceUrl = null;
+    let tailorInvoiceUrl = null;
+    
+    try {
+      // Generate both PDFs in parallel
+      const pdfPromises = [
+        generateSinglePDF('customer', updatedOrder),
+        generateSinglePDF('tailor', updatedOrder)
+      ];
+      
+      const [customerResult, tailorResult] = await Promise.allSettled(pdfPromises);
+      
+      if (customerResult.status === 'fulfilled') {
+        customerInvoiceUrl = customerResult.value;
+        console.log('[API] Customer PDF generated and uploaded:', customerInvoiceUrl);
+      } else {
+        console.error('[API] Customer PDF generation failed:', customerResult.reason);
+      }
+      
+      if (tailorResult.status === 'fulfilled') {
+        tailorInvoiceUrl = tailorResult.value;
+        console.log('[API] Tailor PDF generated and uploaded:', tailorInvoiceUrl);
+      } else {
+        console.error('[API] Tailor PDF generation failed:', tailorResult.reason);
+      }
+      
+      // Update order with PDF URLs
+      const updateData: any = {
+        pdfsGenerated: true,
+        pdfsGeneratedAt: new Date()
+      };
+      
+      if (customerInvoiceUrl) {
+        updateData.customerInvoiceUrl = customerInvoiceUrl;
+      }
+      if (tailorInvoiceUrl) {
+        updateData.tailorInvoiceUrl = tailorInvoiceUrl;
+      }
+      
       await db.collection("orders").updateOne(
-        { _id: savedOrder._id },
-        { $set: { invoiceLinks } }
+        { oid },
+        { $set: updateData }
       );
+      
+      console.log('[API] Order updated with PDF URLs');
+      
+    } catch (pdfError) {
+      console.error('[API] PDF generation failed:', pdfError);
+      // Continue with order submission even if PDF generation fails
     }
     
     // Fetch updated order
     const updatedOrder = await db.collection("orders").findOne({ _id: savedOrder._id });
+    console.log('[API] Updated order fetched successfully');
+    
     // --- Automatically send WhatsApp message ---
     try {
-      console.log("Attempting to send WhatsApp message...");
+      console.log("[API] Attempting to send WhatsApp message...");
       const waToken = process.env.WHATSAPP_ACCESS_TOKEN;
       if (!waToken) {
         console.error("WHATSAPP_ACCESS_TOKEN not found in environment variables");
@@ -447,24 +614,38 @@ export async function POST(req: NextRequest) {
         phoneNumber = '91' + phoneNumber;
       }
       console.log("Sending WhatsApp message to:", phoneNumber);
-      // Use proxy-pdf URL for WhatsApp invoice link
-      const invoiceLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://sonyfashion.in'}/api/proxy-pdf?type=customer&oid=${updatedOrder.oid}`;
+      // Use generated PDF URL for WhatsApp invoice link
+      const invoiceLink = customerInvoiceUrl || `${process.env.NEXT_PUBLIC_BASE_URL || 'https://sonyfashion.in'}/api/proxy-pdf?type=customer&oid=${updatedOrder.oid}`;
+
+      // Build garments summary: Only include garments with at least one design
+      const validGarments = (updatedOrder.garments || []).filter((g: any) => Array.isArray(g.designs) && g.designs.length > 0);
+      const garmentsSummary = validGarments.length > 0 ? validGarments.map((g: any) => {
+        const type = g.order?.orderType || g.orderType || '-';
+        const variant = g.variant || '-';
+        const qty = g.designs.length;
+        return `${type} (${variant}) x${qty}`;
+      }).join(', ') : '-';
+
+      // Always show advance and due, even if 0
+      const advancePaid = `Advance: ₹${updatedOrder.advanceAmount !== undefined ? updatedOrder.advanceAmount : 0}`;
+      const amountDue = `Due: ₹${updatedOrder.dueAmount !== undefined ? updatedOrder.dueAmount : 0}`;
+
       const params = [
-        updatedOrder.fullName || "",
-        updatedOrder.oid || "",
-        updatedOrder.orderDate || "",
-        (updatedOrder.garments || []).map((g) => g.order?.orderType).join(", ") || "",
-        updatedOrder.totalAmount || "",
+        updatedOrder.fullName || "-",
+        updatedOrder.oid || "-",
+        updatedOrder.orderDate || "-",
+        garmentsSummary,
+        updatedOrder.totalAmount || "-",
         updatedOrder.deliveryDate
           ? new Date(updatedOrder.deliveryDate).toLocaleDateString("en-IN", {
               year: "numeric",
               month: "long",
               day: "numeric",
             })
-          : "",
-        updatedOrder.payment === 'advance' && updatedOrder.advanceAmount ? `Advance: ₹${updatedOrder.advanceAmount}` : "",
-        updatedOrder.payment === 'advance' && updatedOrder.dueAmount !== undefined ? `Due: ₹${updatedOrder.dueAmount}` : "",
-        invoiceLink
+          : "-",
+        advancePaid,
+        amountDue,
+        invoiceLink || "-"
       ];
       
       console.log("WhatsApp template parameters:", params);
@@ -512,10 +693,27 @@ export async function POST(req: NextRequest) {
       console.error("Failed to send WhatsApp message:", err);
     }
 
-    console.log('Returning response:', { success: true, oid, orderDate: formattedDate, order: updatedOrder });
+          console.log('[API] Order processed successfully:', { 
+        success: true, 
+        oid, 
+        orderDate: formattedDate, 
+        garmentsCount: garments.length,
+        totalAmount,
+        processingTime: Date.now() - now.getTime()
+      });
+      
+      // Note: PDFs will be generated on-demand via /api/proxy-pdf endpoint
+      // This provides better performance and caching
+      
+      console.log('[API] Sending success response to client...');
     return NextResponse.json({ success: true, oid, orderDate: formattedDate, order: updatedOrder });
   } catch (error) {
     console.error("Order API error:", error);
-    return NextResponse.json({ success: false, error: error?.toString() }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return NextResponse.json({ 
+      success: false, 
+      error: errorMessage,
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
   }
 } 

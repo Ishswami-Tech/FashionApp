@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "optimize-images": "node scripts/optimize-images.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
@@ -38,6 +39,8 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@shadcn/ui": "^0.0.4",
     "@sparticuz/chromium": "^138.0.1",
+    "@tanstack/react-query": "^5.83.0",
+    "@tanstack/react-query-devtools": "^5.83.0",
     "autoprefixer": "^10.4.21",
     "busboy": "^1.6.0",
     "class-variance-authority": "^0.7.1",
@@ -80,6 +83,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "sharp": "^0.34.3",
     "tailwindcss": "^4.1.11",
     "tw-animate-css": "^1.3.5",
     "typescript": "^5"

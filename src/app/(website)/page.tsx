@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   ChevronRight,
   Star,
@@ -23,6 +23,11 @@ import {
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { Button as StatefulButton } from "@/components/ui/stateful-button";
+import { useMutationData } from "@/hooks/useMutationData";
+
+// Dynamic imports for performance
+const DynamicDialog = React.lazy(() => import("@/components/ui/dialog").then(module => ({ default: module.Dialog })));
+const DynamicDialogContent = React.lazy(() => import("@/components/ui/dialog").then(module => ({ default: module.DialogContent })));
 
 const SonyFashionTailor = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -43,18 +48,37 @@ const SonyFashionTailor = () => {
       hue: number;
     }>
   >([]);
+  
+  // Performance optimization: Debounced scroll handler
+  const debouncedScrollHandler = useCallback(() => {
+    setScrollY(window.scrollY);
+  }, []);
 
   useEffect(() => {
+    let ticking = false;
+    
     const handleMouseMove = (e: MouseEvent) => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
       setMousePosition({ x: e.clientX, y: e.clientY });
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
       setScrollY(window.scrollY);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
@@ -62,59 +86,14 @@ const SonyFashionTailor = () => {
     };
   }, []);
 
-  // Particle Animation
+  // Disabled Particle Animation for maximum performance
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
+    // Set canvas size but don't animate
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-
-    const particles: Array<{
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      size: number;
-      opacity: number;
-      hue: number;
-    }> = [];
-
-    for (let i = 0; i < 30; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        size: Math.random() * 2 + 0.5,
-        opacity: Math.random() * 0.3 + 0.1,
-        hue: Math.random() * 60 + 300, // Purple to pink range
-      });
-    }
-    particlesRef.current = particles;
-
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      particles.forEach((particle) => {
-        particle.x += particle.vx;
-        particle.y += particle.vy;
-
-        if (particle.x < 0 || particle.x > canvas.width) particle.vx *= -1;
-        if (particle.y < 0 || particle.y > canvas.height) particle.vy *= -1;
-
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${particle.hue}, 60%, 70%, ${particle.opacity})`;
-        ctx.fill();
-      });
-
-      requestAnimationFrame(animate);
-    };
-    animate();
 
     const handleResize = () => {
       canvas.width = window.innerWidth;
@@ -122,7 +101,9 @@ const SonyFashionTailor = () => {
     };
 
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -135,17 +116,26 @@ const SonyFashionTailor = () => {
           }
         });
       },
-      { threshold: 0.2 }
+      { threshold: 0.05, rootMargin: '100px' }
     );
 
+    // Use requestIdleCallback for better performance
+    const observeSections = () => {
     document.querySelectorAll("section[id]").forEach((section) => {
       observer.observe(section);
     });
+    };
+
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(observeSections);
+    } else {
+      setTimeout(observeSections, 0);
+    }
 
     return () => observer.disconnect();
   }, []);
 
-  const services = [
+  const services = useMemo(() => [
     {
       icon: <Sparkles className="w-8 h-8" />,
       title: "Designer Kurtis",
@@ -180,9 +170,9 @@ const SonyFashionTailor = () => {
       bgGradient: "from-indigo-50 to-blue-50",
       border: "border-indigo-200",
     },
-  ];
+  ], []);
 
-  const testimonials = [
+  const testimonials = useMemo(() => [
     {
       name: "Priya Sharma",
       rating: 5,
@@ -204,9 +194,9 @@ const SonyFashionTailor = () => {
       location: "Bangalore",
       avatar: "MS",
     },
-  ];
+  ], []);
 
-  const stats = [
+  const stats = useMemo(() => [
     {
       icon: <Users className="w-6 h-6" />,
       number: "5000+",
@@ -227,12 +217,12 @@ const SonyFashionTailor = () => {
       number: "48hrs",
       label: "Quick Delivery",
     },
-  ];
+  ], []);
 
-  const scrollToSection = (sectionId: string) => {
+  const scrollToSection = useCallback((sectionId: string) => {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
     setIsMenuOpen(false);
-  };
+  }, []);
 
   // Contact form state
   const [form, setForm] = useState({
@@ -252,62 +242,67 @@ const SonyFashionTailor = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitStatus("loading");
-    try {
-      const now = new Date();
-      const timestamp = now.toLocaleString("en-IN", { hour12: true });
-      const cleanTimestamp = timestamp.replace(/[\n\t]+/g, " ");
-      const cleanMessage = form.message.replace(/[\n\t]+/g, " ");
-      const params = [
-        form.name, // {{1}}
-        form.phone, // {{2}}
-        form.email, // {{3}}
-        cleanTimestamp, // {{4}}
-        cleanMessage, // {{5}}
-      ];
+  const { mutate: sendWhatsapp, isPending: isSending } = useMutationData(
+    ["send-whatsapp-message"],
+    async (payload: any) => {
       const res = await fetch("/api/whatsapp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: "91986009677",
-          params,
-          templateName: "contact_form_lead",
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (res.ok) {
-        toast.success(
-          "Your message has been sent! We'll contact you soon on WhatsApp."
-        );
-        setForm({ name: "", phone: "", email: "", message: "" });
-        setSubmitStatus("success");
-        setTimeout(() => setSubmitStatus("idle"), 2000);
-      } else {
-        toast.error(
-          "Failed to send message: " + (data.error || "Unknown error")
-        );
-        setSubmitStatus("idle");
-      }
-    } catch (err) {
-      toast.error("Failed to send message. Please try again later.");
-      setSubmitStatus("idle");
-    } finally {
+      if (!res.ok) throw new Error(data.error || "Failed to send message");
+      return data;
+    },
+    undefined,
+    (data) => {
+      toast.success("Your message has been sent! We'll contact you soon on WhatsApp.");
+      setForm({ name: "", phone: "", email: "", message: "" });
+      setSubmitStatus("success");
+      setTimeout(() => setSubmitStatus("idle"), 2000);
     }
+  );
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitStatus("loading");
+    const now = new Date();
+    const timestamp = now.toLocaleString("en-IN", { hour12: true });
+    const cleanTimestamp = timestamp.replace(/[\n\t]+/g, " ");
+    const cleanMessage = form.message.replace(/[\n\t]+/g, " ");
+    const params = [
+      form.name,
+      form.phone,
+      form.email,
+      cleanTimestamp,
+      cleanMessage,
+    ];
+    sendWhatsapp(
+      {
+        to: "91986009677",
+        params,
+        templateName: "contact_form_lead",
+      },
+      {
+        onError: (err: any) => {
+          toast.error("Failed to send message: " + (err.message || "Unknown error"));
+          setSubmitStatus("idle");
+        },
+      }
+    );
   };
 
-  // Gallery images
-  const galleryImages = [
-    "/gallery/design1.png",
-    "/gallery/design2.png",
-    "/gallery/design1.png",
-    "/gallery/design2.png",
-    "/gallery/design2.png",
-    "/gallery/design1.png",
-    "/gallery/design2.png",
-    "/gallery/design1.png",
-  ];
+  // Optimized gallery images with WebP format and smaller sizes
+  const galleryImages = useMemo(() => [
+    "/gallery/design1.webp",
+    "/gallery/design2.webp",
+    "/gallery/design1.webp",
+    "/gallery/design2.webp",
+    "/gallery/design2.webp",
+    "/gallery/design1.webp",
+    "/gallery/design2.webp",
+    "/gallery/design1.webp",
+  ], []);
 
   // State for enlarged image dialog
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
@@ -321,25 +316,37 @@ const SonyFashionTailor = () => {
     }
   }, [dialogOpen]);
 
+  const [isAuth, setIsAuth] = useState(false);
+  useEffect(() => {
+    setIsAuth(typeof window !== 'undefined' && localStorage.getItem('auth') === 'true');
+  }, []);
+  const handleLoginClick = () => {
+    if (isAuth) {
+      window.location.href = '/orderform';
+    } else {
+      window.location.href = '/auth';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-rose-50/30 text-gray-900 overflow-x-hidden relative">
-      {/* Animated Background Canvas */}
+      {/* Static Background Canvas - No animation for performance */}
       <canvas
         ref={canvasRef}
         className="fixed inset-0 pointer-events-none z-0"
-        style={{ opacity: 0.6 }}
+        style={{ opacity: 0.1 }}
       />
 
-      {/* Cursor Glow Effect */}
-      <div
-        className="fixed w-96 h-96 pointer-events-none z-10 mix-blend-multiply"
+      {/* Disabled Cursor Glow Effect for performance */}
+      {/* <div
+        className="fixed w-64 h-64 pointer-events-none z-10 mix-blend-multiply"
         style={{
-          background: `radial-gradient(circle, rgba(236, 72, 153, 0.08) 0%, transparent 50%)`,
-          left: mousePosition.x - 192,
-          top: mousePosition.y - 192,
-          transition: "all 0.3s ease",
+          background: `radial-gradient(circle, rgba(236, 72, 153, 0.05) 0%, transparent 50%)`,
+          left: mousePosition.x - 128,
+          top: mousePosition.y - 128,
+          transition: "all 0.5s ease",
         }}
-      />
+      /> */}
 
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-xl border-b border-gray-200/50 z-50 transition-all duration-300 shadow-sm">
@@ -361,7 +368,7 @@ const SonyFashionTailor = () => {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex space-x-1">
+            <div className="hidden md:flex space-x-1 items-center">
               {["home", "services", "gallery", "testimonials", "contact"].map(
                 (item) => (
                   <button
@@ -380,6 +387,12 @@ const SonyFashionTailor = () => {
                   </button>
                 )
               )}
+              <button
+                onClick={handleLoginClick}
+                className="ml-4 px-5 py-2 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition shadow"
+              >
+                {isAuth ? 'Order Form' : 'Login'}
+              </button>
             </div>
 
             {/* Mobile menu button */}
@@ -411,6 +424,12 @@ const SonyFashionTailor = () => {
                   </button>
                 )
               )}
+              <button
+                onClick={handleLoginClick}
+                className="mt-2 px-5 py-3 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition shadow"
+              >
+                {isAuth ? 'Order Form' : 'Login'}
+              </button>
             </div>
           </div>
         )}
@@ -421,22 +440,13 @@ const SonyFashionTailor = () => {
         id="home"
         className="min-h-screen flex items-center justify-center relative overflow-hidden"
       >
-        {/* Animated Background Elements */}
+        {/* Static Background Elements - No animation for performance */}
         <div className="absolute inset-0">
           <div
-            className="absolute top-20 left-20 w-80 h-80 bg-gradient-to-r from-rose-200/40 to-pink-200/40 rounded-full blur-3xl animate-pulse"
-            style={{ transform: `translateY(${scrollY * 0.5}px)` }}
+            className="absolute top-20 left-20 w-60 h-60 bg-gradient-to-r from-rose-200/20 to-pink-200/20 rounded-full blur-xl"
           ></div>
           <div
-            className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-r from-purple-200/40 to-indigo-200/40 rounded-full blur-3xl animate-pulse delay-1000"
-            style={{ transform: `translateY(${scrollY * -0.3}px)` }}
-          ></div>
-          <div
-            className="absolute top-1/2 left-1/2 w-[600px] h-[600px] bg-gradient-to-r from-pink-100/30 to-rose-100/30 rounded-full blur-3xl animate-spin"
-            style={{
-              transform: `translate(-50%, -50%) rotate(${scrollY * 0.1}deg)`,
-              animationDuration: "20s",
-            }}
+            className="absolute bottom-20 right-20 w-72 h-72 bg-gradient-to-r from-purple-200/20 to-indigo-200/20 rounded-full blur-xl"
           ></div>
         </div>
 
@@ -456,14 +466,14 @@ const SonyFashionTailor = () => {
               </span>
             </div>
 
-            <h1 className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-black mb-8 leading-tight">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-black mb-8 leading-tight">
               <span className="block bg-gradient-to-r from-rose-600 via-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent animate-gradient bg-300% relative">
                 SONY
-                <div className="absolute inset-0 bg-gradient-to-r from-rose-600 via-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent blur-lg opacity-30 animate-pulse"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-rose-600 via-pink-600 via-purple-600 to-rose-600 bg-clip-text text-transparent blur-lg opacity-20 animate-pulse"></div>
               </span>
               <span className="block text-gray-900 mt-4 relative">
                 FASHION
-                <div className="absolute -inset-1 bg-gradient-to-r from-rose-300/30 to-purple-300/30 blur-xl"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-rose-300/20 to-purple-300/20 blur-lg"></div>
               </span>
             </h1>
 
@@ -515,21 +525,21 @@ const SonyFashionTailor = () => {
           </div>
         </div>
 
-        {/* Floating Geometric Elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          {[...Array(12)].map((_, i) => (
+        {/* Disabled Floating Elements for performance */}
+        {/* <div className="absolute inset-0 pointer-events-none">
+          {[...Array(6)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-2 h-2 bg-gradient-to-r from-rose-400 to-pink-400 rounded-full opacity-40"
+              className="absolute w-1.5 h-1.5 bg-gradient-to-r from-rose-400 to-pink-400 rounded-full opacity-30"
               style={{
-                left: `${10 + i * 7}%`,
-                top: `${20 + (i % 3) * 20}%`,
-                animationDelay: `${i * 0.2}s`,
-                transform: `translateY(${Math.sin(scrollY * 0.01 + i) * 20}px)`,
+                left: `${15 + i * 12}%`,
+                top: `${25 + (i % 2) * 25}%`,
+                animationDelay: `${i * 0.3}s`,
+                transform: `translateY(${Math.sin(scrollY * 0.005 + i) * 10}px)`,
               }}
             ></div>
           ))}
-        </div>
+        </div> */}
       </section>
 
       {/* Services Section */}
@@ -665,6 +675,9 @@ const SonyFashionTailor = () => {
                   alt={`Design ${index + 1}`}
                   className="w-full h-full object-cover rounded-2xl transition-transform duration-500 group-hover:scale-110"
                   loading="lazy"
+                  width="300"
+                  height="300"
+                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 />
                 {/* Hover Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
@@ -958,12 +971,12 @@ const SonyFashionTailor = () => {
                     type="submit"
                     status={submitStatus}
                     className="w-full bg-gradient-to-r from-rose-500 via-pink-500 to-purple-500 py-4 rounded-2xl font-bold text-lg shadow-lg hover:from-rose-600 hover:via-pink-600 hover:to-purple-600 transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed"
-                    disabled={submitStatus === "loading"}
+                    disabled={submitting}
                   >
                     <span className="flex items-center justify-center space-x-2">
                       <Sparkles className="w-5 h-5" />
                       <span>
-                        {submitStatus === "loading"
+                        {submitting
                           ? "Sending..."
                           : submitStatus === "success"
                           ? "Sent!"

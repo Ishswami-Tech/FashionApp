@@ -158,8 +158,13 @@ async function generateSinglePDF(type: 'customer' | 'tailor', order: any) {
       throw new Error(`HTML generation failed for ${type} PDF`);
     }
     
-    // Generate PDF
-    const pdfBuffer = await generatePdf(html);
+    // Generate PDF with timeout
+    const pdfPromise = generatePdf(html);
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('PDF generation timeout after 30 seconds')), 30000);
+    });
+    
+    const pdfBuffer = await Promise.race([pdfPromise, timeoutPromise]) as Buffer;
     if (!pdfBuffer || pdfBuffer.length === 0) {
       throw new Error(`PDF generation failed for ${type} PDF`);
     }
@@ -193,7 +198,14 @@ async function generateSinglePDF(type: 'customer' | 'tailor', order: any) {
     });
     
     console.log(`[API] ${type} PDF uploaded to Cloudinary: ${uploadResult.secure_url}`);
-    return uploadResult.secure_url;
+    console.log(`[API] ${type} PDF public_id: ${uploadResult.public_id}`);
+    
+    // Return both URL and public_id for better tracking
+    return {
+      url: uploadResult.secure_url,
+      public_id: uploadResult.public_id,
+      asset_id: uploadResult.asset_id
+    };
     
   } catch (error) {
     console.error(`[API] Failed to generate ${type} PDF:`, error);
@@ -539,35 +551,39 @@ export async function POST(req: NextRequest) {
 
     // --- PDF Generation and Cloudinary Upload (Optimized) ---
     console.log('[API] Starting PDF generation...');
-    let customerPdf, tailorPdf;
-    let pdfGenerationSuccess = false;
-    let customerUpload = null, tailorUpload = null;
-    
-    // Generate PDFs during order processing for instant access
-    console.log('[API] Generating PDFs during order processing...');
     
     let customerInvoiceUrl = null;
     let tailorInvoiceUrl = null;
     
     try {
-      // Generate both PDFs in parallel
+      // Generate both PDFs in parallel using the savedOrder
       const pdfPromises = [
-        generateSinglePDF('customer', updatedOrder),
-        generateSinglePDF('tailor', updatedOrder)
+        generateSinglePDF('customer', savedOrder),
+        generateSinglePDF('tailor', savedOrder)
       ];
       const [customerResult, tailorResult] = await Promise.allSettled(pdfPromises);
+      
+      let customerPdfData = null;
+      let tailorPdfData = null;
+      
       if (customerResult.status === 'fulfilled') {
-        customerInvoiceUrl = customerResult.value;
+        customerPdfData = customerResult.value;
+        customerInvoiceUrl = customerPdfData.url;
         console.log('[API] Customer PDF generated and uploaded:', customerInvoiceUrl);
+        console.log('[API] Customer PDF public_id:', customerPdfData.public_id);
       } else {
         console.error('[API] Customer PDF generation failed:', customerResult.reason);
       }
+      
       if (tailorResult.status === 'fulfilled') {
-        tailorInvoiceUrl = tailorResult.value;
+        tailorPdfData = tailorResult.value;
+        tailorInvoiceUrl = tailorPdfData.url;
         console.log('[API] Tailor PDF generated and uploaded:', tailorInvoiceUrl);
+        console.log('[API] Tailor PDF public_id:', tailorPdfData.public_id);
       } else {
         console.error('[API] Tailor PDF generation failed:', tailorResult.reason);
       }
+      
       // If either PDF failed, return error and do not send WhatsApp
       if (!customerInvoiceUrl || !tailorInvoiceUrl) {
         return NextResponse.json({
@@ -577,22 +593,34 @@ export async function POST(req: NextRequest) {
           tailorPdf: tailorInvoiceUrl
         }, { status: 500 });
       }
-      // Update order with PDF URLs
+      
+      // Update order with PDF URLs and metadata
       const updateData: any = {
         pdfsGenerated: true,
         pdfsGeneratedAt: new Date()
       };
-      if (customerInvoiceUrl) {
-        updateData.customerInvoiceUrl = customerInvoiceUrl;
+      
+      if (customerPdfData) {
+        updateData.customerInvoiceUrl = customerPdfData.url;
+        updateData.customerInvoicePublicId = customerPdfData.public_id;
+        updateData.customerInvoiceAssetId = customerPdfData.asset_id;
       }
-      if (tailorInvoiceUrl) {
-        updateData.tailorInvoiceUrl = tailorInvoiceUrl;
+      
+      if (tailorPdfData) {
+        updateData.tailorInvoiceUrl = tailorPdfData.url;
+        updateData.tailorInvoicePublicId = tailorPdfData.public_id;
+        updateData.tailorInvoiceAssetId = tailorPdfData.asset_id;
       }
+      
       await db.collection("orders").updateOne(
         { oid },
         { $set: updateData }
       );
-      console.log('[API] Order updated with PDF URLs');
+      console.log('[API] Order updated with PDF URLs and metadata');
+      console.log('[API] PDF Generation Summary:');
+      console.log(`  - Customer PDF: ${customerInvoiceUrl ? '✅ Generated' : '❌ Failed'}`);
+      console.log(`  - Tailor PDF: ${tailorInvoiceUrl ? '✅ Generated' : '❌ Failed'}`);
+      console.log(`  - Both PDFs ready for WhatsApp: ${customerInvoiceUrl && tailorInvoiceUrl ? '✅ Yes' : '❌ No'}`);
     } catch (pdfError) {
       console.error('[API] PDF generation failed:', pdfError);
       return NextResponse.json({
@@ -618,8 +646,10 @@ export async function POST(req: NextRequest) {
         phoneNumber = '91' + phoneNumber;
       }
       console.log("Sending WhatsApp message to:", phoneNumber);
-      // Use generated PDF URL for WhatsApp invoice link
+      // Use generated PDF URL for WhatsApp invoice link - prefer Cloudinary URL, fallback to proxy
       const invoiceLink = customerInvoiceUrl || `${process.env.NEXT_PUBLIC_BASE_URL || 'https://sonyfashion.in'}/api/proxy-pdf?type=customer&oid=${updatedOrder.oid}`;
+      console.log(`[API] WhatsApp invoice link: ${invoiceLink}`);
+      console.log(`[API] PDF source: ${customerInvoiceUrl ? 'Cloudinary direct URL' : 'Proxy endpoint'}`);
 
       // Build garments summary: Only include garments with at least one design
       const validGarments = (updatedOrder.garments || []).filter((g: any) => Array.isArray(g.designs) && g.designs.length > 0);

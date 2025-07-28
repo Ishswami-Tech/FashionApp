@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
     
     console.log(`[Proxy PDF] Response headers:`, headers);
     
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(pdfBuffer as any, {
       status: 200,
       headers,
     });
@@ -169,7 +169,78 @@ export async function GET(req: NextRequest) {
   console.log(`[Proxy PDF] GET Request for ${type} invoice, order: ${oid}`);
 
   try {
-    // Set up folder structure
+    // First, try to get the order from database to check if PDFs were generated
+    let client;
+    try {
+      client = await clientPromise;
+      const db = client.db(process.env.MONGODB_DB || "fashionapp");
+      const order = await db.collection("orders").findOne({ oid });
+      
+      if (order && order.pdfsGenerated) {
+        // Check if we have the specific PDF URL stored
+        const pdfUrl = type === 'customer' ? order.customerInvoiceUrl : order.tailorInvoiceUrl;
+        const pdfPublicId = type === 'customer' ? order.customerInvoicePublicId : order.tailorInvoicePublicId;
+        
+        if (pdfUrl && pdfPublicId) {
+          console.log(`[Proxy PDF] Found stored PDF URL for ${type}: ${pdfUrl}`);
+          console.log(`[Proxy PDF] Using stored public_id: ${pdfPublicId}`);
+          
+          // Try to serve from stored Cloudinary URL first
+          try {
+            const fileRes = await fetch(pdfUrl);
+            if (fileRes.ok) {
+              const arrayBuffer = await fileRes.arrayBuffer();
+              console.log(`[Proxy PDF] Serving PDF from stored URL (${arrayBuffer.byteLength} bytes)`);
+              return new NextResponse(Buffer.from(arrayBuffer), {
+                status: 200,
+                headers: {
+                  "Content-Type": "application/pdf",
+                  "Content-Disposition": `inline; filename="${type}_${oid}.pdf"`,
+                  "Cache-Control": "public, max-age=3600",
+                  "Content-Length": arrayBuffer.byteLength.toString(),
+                },
+              });
+            }
+          } catch (urlError) {
+            console.log(`[Proxy PDF] Failed to fetch from stored URL, trying public_id:`, urlError);
+          }
+          
+          // Fallback: Use public_id to generate download URL
+          try {
+            const downloadUrl = cloudinary.utils.private_download_url(
+              pdfPublicId,
+              "pdf",
+              {
+                resource_type: "raw",
+                type: "upload",
+                expires_at: Math.floor(Date.now() / 1000) + 60,
+              }
+            );
+
+            const fileRes = await fetch(downloadUrl);
+            if (fileRes.ok) {
+              const arrayBuffer = await fileRes.arrayBuffer();
+              console.log(`[Proxy PDF] Serving PDF using public_id (${arrayBuffer.byteLength} bytes)`);
+              return new NextResponse(Buffer.from(arrayBuffer), {
+                status: 200,
+                headers: {
+                  "Content-Type": "application/pdf",
+                  "Content-Disposition": `inline; filename="${type}_${oid}.pdf"`,
+                  "Cache-Control": "public, max-age=3600",
+                  "Content-Length": arrayBuffer.byteLength.toString(),
+                },
+              });
+            }
+          } catch (publicIdError) {
+            console.log(`[Proxy PDF] Failed to fetch using public_id:`, publicIdError);
+          }
+        }
+      }
+    } catch (dbError) {
+      console.log(`[Proxy PDF] Database error, falling back to folder search:`, dbError);
+    }
+
+    // Fallback: Try to find PDF in Cloudinary using folder structure
     const yyyy = oid.substring(0, 4);
     const mm = oid.substring(4, 6);
     const dd = oid.substring(6, 8);
@@ -185,7 +256,7 @@ export async function GET(req: NextRequest) {
         resource_type: "raw",
         format: "pdf",
       });
-      console.log(`[Proxy PDF] Found existing PDF in Cloudinary: ${public_id}`);
+      console.log(`[Proxy PDF] Found existing PDF in Cloudinary folder: ${public_id}`);
     } catch (err1) {
       try {
         public_id = `${folder}/${type}.pdf`;
@@ -193,7 +264,7 @@ export async function GET(req: NextRequest) {
           resource_type: "raw",
           format: "pdf",
         });
-        console.log(`[Proxy PDF] Found existing PDF in Cloudinary: ${public_id}`);
+        console.log(`[Proxy PDF] Found existing PDF in Cloudinary folder: ${public_id}`);
       } catch (err2) {
         console.log(`[Proxy PDF] PDF not found in Cloudinary, redirecting to generation`);
         // Redirect to POST endpoint for generation
@@ -216,7 +287,7 @@ export async function GET(req: NextRequest) {
     if (!fileRes.ok) throw new Error("Failed to fetch PDF from Cloudinary");
     const arrayBuffer = await fileRes.arrayBuffer();
 
-    console.log(`[Proxy PDF] Serving existing PDF from Cloudinary (${arrayBuffer.byteLength} bytes)`);
+    console.log(`[Proxy PDF] Serving existing PDF from Cloudinary folder (${arrayBuffer.byteLength} bytes)`);
     return new NextResponse(Buffer.from(arrayBuffer), {
       status: 200,
       headers: {

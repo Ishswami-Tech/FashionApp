@@ -1,9 +1,22 @@
 import React, { useEffect } from "react";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { CardFooter } from "@/components/ui/card";
 import { CanvasPaint } from "@/components/CanvasPaint";
 
@@ -80,7 +93,7 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
 
   return (
     <Form {...orderForm}>
-      <form className="space-y-5" onSubmit={e => e.preventDefault()}>
+      <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
         {/* Order Details fields */}
         <div className="space-y-4">
           <div className="flex flex-row flex-wrap self-center justify-start sm:flex-row gap-4 p-3">
@@ -93,7 +106,13 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                     Garment Category *
                   </FormLabel>
                   <FormControl>
-                    <Select onValueChange={(val) => { field.onChange(val); setGarmentType(val); }} value={field.value}>
+                    <Select
+                      onValueChange={(val) => {
+                        field.onChange(val);
+                        setGarmentType(val);
+                      }}
+                      value={field.value}
+                    >
                       <SelectTrigger className="">
                         <SelectValue placeholder="Select garment category" />
                       </SelectTrigger>
@@ -139,7 +158,9 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
               name="quantity"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium">Quantity *</FormLabel>
+                  <FormLabel className="text-sm font-medium">
+                    Quantity *
+                  </FormLabel>
                   <FormControl>
                     <div className="flex items-center gap-2">
                       <Input
@@ -148,7 +169,7 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                         max={10}
                         {...field}
                         value={field.value}
-                        onChange={e => {
+                        onChange={(e) => {
                           field.onChange(e);
                           setQuantity(Number(e.target.value));
                         }}
@@ -213,7 +234,9 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                       render={({ field }) => (
                         <FormItem className="gap-1">
                           <FormLabel className="text-sm font-medium text-gray-700">
-                            {fieldKey.replace(/([A-Z])/g, " $1").replace(/^./, (s: string) => s.toUpperCase())}
+                            {fieldKey
+                              .replace(/([A-Z])/g, " $1")
+                              .replace(/^./, (s: string) => s.toUpperCase())}
                           </FormLabel>
                           <FormControl>
                             <div className="flex items-center gap-2">
@@ -222,7 +245,12 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                                 step="0.01"
                                 min="0"
                                 {...field}
-                                value={field.value === undefined || field.value === null ? "" : field.value}
+                                value={
+                                  field.value === undefined ||
+                                  field.value === null
+                                    ? ""
+                                    : field.value
+                                }
                                 className="w-full border border-gray-200 rounded-md shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                               />
                               <span className="text-xs font-medium text-gray-500 w-6">
@@ -259,7 +287,9 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                 </h3>
               </div>
               <p className="text-sm text-purple-700 p-3 bg-purple-50/50">
-                Create {quantity} design{quantity > 1 ? "s" : ""} for your {garmentType.toLowerCase()}. Each design can have its own name, reference images, description, and price.
+                Create {quantity} design{quantity > 1 ? "s" : ""} for your{" "}
+                {garmentType.toLowerCase()}. Each design can have its own name,
+                reference images, description, and price.
               </p>
               {designs.map((d, idx) => (
                 <div key={idx} className="p-3 border-t border-purple-200">
@@ -316,57 +346,98 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                     <label className="block font-medium mb-1 text-sm text-gray-700">
                       Design Reference Images (max 5)
                     </label>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      multiple
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files || []);
-                        setDesigns((prev) => {
-                          const arr = [...prev];
-                          arr[idx].designReference = files.slice(0, 5);
-                          arr[idx].designReferencePreviews = files.slice(0, 5).map((file) =>
-                            typeof file === "string" ? file : URL.createObjectURL(file)
-                          );
-                          return arr;
-                        });
-                        e.target.value = ""; // Clear input to allow re-uploading the same file
-                      }}
-                      className="w-full"
-                      disabled={designs[idx].designReference?.length >= 5}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Upload or take up to 5 reference images for this design.
-                    </p>
-                    {/* Image Previews */}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {(designs[idx].designReferencePreviews || []).map((url: string, i: number) => (
-                        <div key={i} className="relative group">
-                          <img
-                            src={url}
-                            alt={`Reference ${i + 1}`}
-                            className="w-20 h-20 object-cover border rounded"
-                          />
-                          {/* Remove button */}
-                          <button
-                            type="button"
-                            className="absolute top-0 right-0 bg-white bg-opacity-80 rounded-full p-1 text-xs text-red-600 group-hover:visible invisible"
-                            onClick={() => {
-                              setDesigns((prev) => {
-                                const arr = [...prev];
-                                arr[idx].designReference = arr[idx].designReference.filter((item: any, j: number) => j !== i);
-                                arr[idx].designReferencePreviews = arr[idx].designReferencePreviews.filter((item: any, j: number) => j !== i);
-                                return arr;
-                              });
-                            }}
-                            aria-label="Remove image"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
+                    <div className="relative">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          setDesigns((prev) => {
+                            const arr = [...prev];
+                            arr[idx].designReference = files.slice(0, 5);
+                            arr[idx].designReferencePreviews = files
+                              .slice(0, 5)
+                              .map((file) =>
+                                typeof file === "string"
+                                  ? file
+                                  : URL.createObjectURL(file)
+                              );
+                            return arr;
+                          });
+                          e.target.value = ""; // Clear input to allow re-uploading the same file
+                        }}
+                        className="w-full cursor-pointer"
+                        disabled={designs[idx].designReference?.length >= 5}
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                        <span className="text-gray-400 text-sm">📷</span>
+                      </div>
                     </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xs text-gray-500">
+                        📱 Choose from gallery or take photos with camera
+                      </p>
+                      <span className="text-xs text-blue-600 font-medium">
+                        ({designs[idx].designReference?.length || 0}/5)
+                      </span>
+                    </div>
+                    {/* Image Previews */}
+                    {(designs[idx].designReferencePreviews || []).length > 0 ? (
+                      <div className="mt-3">
+                        <p className="text-xs text-gray-600 mb-2 font-medium">
+                          📸 Selected Images:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {(designs[idx].designReferencePreviews || []).map(
+                            (url: string, i: number) => (
+                              <div key={i} className="relative group">
+                                <img
+                                  src={url}
+                                  alt={`Reference ${i + 1}`}
+                                  className="w-20 h-20 object-cover border rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                                />
+                                {/* Remove button */}
+                                <button
+                                  type="button"
+                                  className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold transition-colors"
+                                  onClick={() => {
+                                    setDesigns((prev) => {
+                                      const arr = [...prev];
+                                      arr[idx].designReference = arr[
+                                        idx
+                                      ].designReference.filter(
+                                        (item: any, j: number) => j !== i
+                                      );
+                                      arr[idx].designReferencePreviews = arr[
+                                        idx
+                                      ].designReferencePreviews.filter(
+                                        (item: any, j: number) => j !== i
+                                      );
+                                      return arr;
+                                    });
+                                  }}
+                                  aria-label="Remove image"
+                                >
+                                  ×
+                                </button>
+                                {/* Image number badge */}
+                                <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 text-white text-xs px-1 rounded">
+                                  {i + 1}
+                                </div>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-3 p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                        <p className="text-xs text-gray-500 text-center">
+                          📱 No images selected yet. Tap above to choose from
+                          gallery or take photos!
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <div className="mt-3">
                     <label className="block font-medium mb-1 text-sm text-gray-700">
@@ -389,7 +460,10 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                     <label className="block font-medium mb-1 text-sm text-gray-700">
                       Custom Drawing
                     </label>
-                    <div className="border border-gray-200 rounded-lg flex flex-col items-center max-w-full" style={{maxWidth: '500px', margin: '0 auto'}}>
+                    <div
+                      className="border border-gray-200 rounded-lg flex flex-col items-center max-w-full"
+                      style={{ maxWidth: "500px", margin: "0 auto" }}
+                    >
                       <CanvasPaint
                         onSave={(data) => {
                           setDesigns((prev) => {
@@ -402,7 +476,8 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                         initialData={designs[idx].canvasJson}
                       />
                       <p className="text-xs text-gray-500 mt-1 p-2 text-center">
-                        Draw or annotate your design here. Click Save to attach it to this design.
+                        Draw or annotate your design here. Click Save to attach
+                        it to this design.
                       </p>
                     </div>
                   </div>
@@ -415,7 +490,11 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                         src={designs[idx].canvasImage}
                         alt="Canvas Drawing Preview"
                         className="border rounded shadow-sm max-w-full h-auto"
-                        style={{ maxHeight: 150, width: '100%', objectFit: 'contain' }}
+                        style={{
+                          maxHeight: 150,
+                          width: "100%",
+                          objectFit: "contain",
+                        }}
                       />
                     </div>
                   )}
@@ -424,15 +503,7 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
             </div>
           </>
         )}
-        <CardFooter className="flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between pt-4 w-full">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleBack}
-            className="w-full sm:w-auto px-6 py-2 rounded-lg font-semibold"
-          >
-            Back
-          </Button>
+        <CardFooter className="flex flex-col sm:flex-row gap-3 sm:gap-0 justify-end pt-4 w-full">
           <Button
             type="button"
             onClick={handleAddGarment}
@@ -444,4 +515,4 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
       </form>
     </Form>
   );
-}; 
+};

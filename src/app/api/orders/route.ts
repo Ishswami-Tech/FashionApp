@@ -595,6 +595,8 @@ export async function POST(req: NextRequest) {
       }
       
       // Update order with PDF URLs and metadata
+      // Note: Cloudinary URLs are stored for admin access and proxy endpoint fallback
+      // WhatsApp messages use proxy endpoint URLs which serve PDFs with proper headers
       const updateData: any = {
         pdfsGenerated: true,
         pdfsGeneratedAt: new Date()
@@ -646,10 +648,10 @@ export async function POST(req: NextRequest) {
         phoneNumber = '91' + phoneNumber;
       }
       console.log("Sending WhatsApp message to:", phoneNumber);
-      // Use generated PDF URL for WhatsApp invoice link - prefer Cloudinary URL, fallback to proxy
-      const invoiceLink = customerInvoiceUrl || `${process.env.NEXT_PUBLIC_BASE_URL || 'https://sonyfashion.in'}/api/proxy-pdf?type=customer&oid=${updatedOrder.oid}`;
+      // Always use proxy endpoint for WhatsApp - Cloudinary URLs cannot be opened directly in WhatsApp
+      const invoiceLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://sonyfashion.in'}/api/proxy-pdf?type=customer&oid=${updatedOrder.oid}`;
       console.log(`[API] WhatsApp invoice link: ${invoiceLink}`);
-      console.log(`[API] PDF source: ${customerInvoiceUrl ? 'Cloudinary direct URL' : 'Proxy endpoint'}`);
+      console.log(`[API] PDF source: Proxy endpoint (Cloudinary URLs cannot be opened directly in WhatsApp)`);
 
       // Build garments summary: Only include garments with at least one design
       const validGarments = (updatedOrder.garments || []).filter((g: any) => Array.isArray(g.designs) && g.designs.length > 0);

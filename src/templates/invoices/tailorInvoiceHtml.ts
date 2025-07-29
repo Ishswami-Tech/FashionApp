@@ -16,22 +16,34 @@ export function getTailorInvoiceHtml(order: any) {
   
   console.log(`[Tailor Invoice] Processing order ${orderIdValue} with ${garmentsData.length} garments`);
 
-  function renderDesignImages(design: any) {
+  function renderDesignImages(design: any, garment: any) {
     let images: string[] = [];
     const urlSet = new Set<string>();
+    
+    console.log(`[Tailor Invoice] Rendering images for design:`, design?.name || 'unnamed');
+    console.log(`[Tailor Invoice] Design reference files:`, design?.designReferenceFiles);
+    console.log(`[Tailor Invoice] Garment canvas image:`, garment?.measurement?.canvasImageFile);
+    
     // Always include all designReferenceFiles (Cloudinary URLs)
     if (Array.isArray(design?.designReferenceFiles)) {
       design.designReferenceFiles.forEach((file: any) => {
         if (file?.url && !urlSet.has(file.url)) {
+          console.log(`[Tailor Invoice] Adding design reference image:`, file.url);
           images.push(`<img src="${file.url}" alt="Reference" class="canvas-image" />`);
           urlSet.add(file.url);
         }
       });
     }
-    // Canvas image
+    
+    // Canvas image - check both design level and garment level
     if (design?.canvasImage && typeof design.canvasImage === 'string' && !urlSet.has(design.canvasImage)) {
+      console.log(`[Tailor Invoice] Adding design canvas image:`, design.canvasImage);
       images.push(`<img src="${design.canvasImage}" alt="Canvas Drawing" class="canvas-image" />`);
       urlSet.add(design.canvasImage);
+    } else if (garment?.measurement?.canvasImageFile?.url && !urlSet.has(garment.measurement.canvasImageFile.url)) {
+      console.log(`[Tailor Invoice] Adding garment canvas image:`, garment.measurement.canvasImageFile.url);
+      images.push(`<img src="${garment.measurement.canvasImageFile.url}" alt="Canvas Drawing" class="canvas-image" />`);
+      urlSet.add(garment.measurement.canvasImageFile.url);
     }
     // Other possible image fields
     const possibleArrays = [
@@ -93,7 +105,9 @@ export function getTailorInvoiceHtml(order: any) {
         }
       }
     });
+    console.log(`[Tailor Invoice] Total images found: ${images.length}`);
     if (images.length === 0) {
+      console.log(`[Tailor Invoice] No images found, showing placeholder`);
       images.push('<span style="color:#888">No images available</span>');
     }
     return images.join("");
@@ -201,7 +215,7 @@ export function getTailorInvoiceHtml(order: any) {
                     <div style="margin-bottom:14px;">
                       <div><strong>Design ${idx + 1}:</strong> ${design.name || `Design ${idx + 1}`}</div>
                       <div>${design.designDescription || "Custom design"}</div>
-                      <div class="design-images">${renderDesignImages(design)}</div>
+                      <div class="design-images">${renderDesignImages(design, garment)}</div>
                     </div>
                   `).join("")
                 : "<div>No design data</div>"}

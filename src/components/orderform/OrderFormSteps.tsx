@@ -15,12 +15,12 @@ import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
 import { Separator } from "../ui/separator";
 import { Alert, AlertDescription } from "../ui/alert";
-import { 
-  CheckCircle, 
-  ShoppingCart, 
-  User, 
-  FileText, 
-  CreditCard, 
+import {
+  CheckCircle,
+  ShoppingCart,
+  User,
+  FileText,
+  CreditCard,
   CheckSquare,
   ArrowRight,
   ArrowLeft,
@@ -31,21 +31,49 @@ import {
   Home,
   Loader2,
   X,
-  Search
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "../ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
 import { useEffect } from "react";
 
 // Enhanced Stepper Component with better accessibility
 function EnhancedStepper() {
   const { step, stepLabels, garments, setStep } = useOrderFormContext();
-  
+
   const steps = [
-    { id: 1, label: "Customer Info", icon: User, description: "Enter your details" },
-    { id: 2, label: "Order Details", icon: FileText, description: "Select garments & measurements" },
-    { id: 3, label: "Payment", icon: CreditCard, description: "Delivery & payment" },
-    { id: 4, label: "Confirmation", icon: CheckSquare, description: "Review & confirm" },
+    {
+      id: 1,
+      label: "Customer Info",
+      icon: User,
+      description: "Enter your details",
+    },
+    {
+      id: 2,
+      label: "Order Details",
+      icon: FileText,
+      description: "Select garments & measurements",
+    },
+    {
+      id: 3,
+      label: "Payment",
+      icon: CreditCard,
+      description: "Delivery & payment",
+    },
+    {
+      id: 4,
+      label: "Confirmation",
+      icon: CheckSquare,
+      description: "Review & confirm",
+    },
   ];
 
   return (
@@ -57,7 +85,10 @@ function EnhancedStepper() {
             <span className="text-xs font-medium text-gray-600">
               Step {step} of {steps.length}
             </span>
-            <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5">
+            <Badge
+              variant="secondary"
+              className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5"
+            >
               {Math.round((step / steps.length) * 100)}% Complete
             </Badge>
           </div>
@@ -82,14 +113,15 @@ function EnhancedStepper() {
                       disabled={!isClickable}
                       className={`
                         group relative flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all duration-200
-                        ${isActive 
-                          ? 'border-blue-600 bg-blue-600 text-white shadow scale-105' 
-                          : isCompleted 
-                          ? 'border-green-500 bg-green-500 text-white cursor-pointer hover:bg-green-600' 
-                          : 'border-gray-300 bg-white text-gray-400 cursor-not-allowed'
+                        ${
+                          isActive
+                            ? "border-blue-600 bg-blue-600 text-white shadow scale-105"
+                            : isCompleted
+                            ? "border-green-500 bg-green-500 text-white cursor-pointer hover:bg-green-600"
+                            : "border-gray-300 bg-white text-gray-400 cursor-not-allowed"
                         }
                       `}
-                      aria-current={isActive ? 'step' : undefined}
+                      aria-current={isActive ? "step" : undefined}
                       aria-label={`Go to step ${stepItem.id}: ${stepItem.label}`}
                     >
                       {isCompleted ? (
@@ -99,9 +131,15 @@ function EnhancedStepper() {
                       )}
                     </button>
                     <div className="mt-1 text-center">
-                      <p className={`text-xs font-medium transition-colors ${
-                        isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-500'
-                      }`}>
+                      <p
+                        className={`text-xs font-medium transition-colors ${
+                          isActive
+                            ? "text-blue-600"
+                            : isCompleted
+                            ? "text-green-600"
+                            : "text-gray-500"
+                        }`}
+                      >
                         {stepItem.label}
                       </p>
                       <p className="text-[11px] text-gray-400 mt-0.5 hidden sm:block">
@@ -124,8 +162,11 @@ function EnhancedStepper() {
           <div className="flex items-center gap-1">
             <ShoppingCart className="h-4 w-4 text-gray-600" />
             <span>Items in cart:</span>
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-2 py-0.5 text-xs">
-              {garments.length} {garments.length === 1 ? 'item' : 'items'}
+            <Badge
+              variant="outline"
+              className="bg-blue-50 text-blue-700 border-blue-200 px-2 py-0.5 text-xs"
+            >
+              {garments.length} {garments.length === 1 ? "item" : "items"}
             </Badge>
           </div>
           <Button
@@ -152,16 +193,16 @@ function EnhancedStepper() {
 
 // Step 1: Customer Info with enhanced UI
 const CustomerInfoStep = () => {
-  const { 
-    customerData, 
-    setCustomerData, 
-    setStep, 
-    submitLoading, 
-    submitError, 
+  const {
+    customerData,
+    setCustomerData,
+    setStep,
+    submitLoading,
+    submitError,
     handleBack,
-    step
+    step,
   } = useOrderFormContext();
-  
+
   const form = useForm({
     resolver: zodResolver(customerInfoSchema),
     mode: "onChange",
@@ -211,14 +252,14 @@ const CustomerInfoStep = () => {
             Please provide your details to proceed with the order
           </p>
         </CardHeader>
-        
+
         <CardContent className="space-y-3">
           {submitError && (
             <Alert variant="destructive">
               <AlertDescription>{submitError}</AlertDescription>
             </Alert>
           )}
-          
+
           <CustomerInfoForm
             form={form}
             onSubmit={handleSubmit}
@@ -227,7 +268,12 @@ const CustomerInfoStep = () => {
           />
         </CardContent>
         {step > 1 && (
-          <Button type="button" variant="outline" onClick={handleBack} className="mt-4 w-full">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleBack}
+            className="mt-4 w-full"
+          >
             ← Back
           </Button>
         )}
@@ -267,7 +313,7 @@ const OrderDetailsStep = () => {
     orderFormReset,
     measurementFormReset,
     setEditingIndex,
-    step
+    step,
   } = useOrderFormContext();
 
   // Memoize the submit handler to prevent recreation on every render
@@ -297,13 +343,14 @@ const OrderDetailsStep = () => {
                 <FileText className="h-8 w-8 text-purple-600" />
               </div>
               <CardTitle className="text-base font-bold text-gray-900">
-                {editingIndex !== null ? 'Edit Garment' : 'Add New Garment'}
+                {editingIndex !== null ? "Edit Garment" : "Add New Garment"}
               </CardTitle>
               <p className="text-gray-600 mt-1">
-                Select garment type, add measurements, and upload design references
+                Select garment type, add measurements, and upload design
+                references
               </p>
             </CardHeader>
-            
+
             <CardContent className="space-y-3">
               <OrderDetailsForm
                 orderForm={orderForm}
@@ -341,7 +388,7 @@ const OrderDetailsStep = () => {
                 Review your selected garments and measurements
               </p>
             </CardHeader>
-            
+
             <CardContent className="space-y-3">
               <GarmentsSummary
                 garments={garments}
@@ -349,9 +396,9 @@ const OrderDetailsStep = () => {
                 onRemove={handleRemoveGarment}
                 summaryRef={garmentsSummaryRef}
               />
-              
+
               <Separator />
-              
+
               <div className="flex flex-col sm:flex-row gap-2 justify-end">
                 <Button
                   type="button"
@@ -362,7 +409,7 @@ const OrderDetailsStep = () => {
                   <ArrowLeft className="h-4 w-4" />
                   Back
                 </Button>
-                
+
                 <Button
                   type="button"
                   variant="outline"
@@ -378,7 +425,7 @@ const OrderDetailsStep = () => {
                   <Plus className="h-4 w-4" />
                   Add Another Garment
                 </Button>
-                
+
                 <Button
                   type="button"
                   onClick={() => setStep(3)}
@@ -393,7 +440,12 @@ const OrderDetailsStep = () => {
           </Card>
         )}
         {step > 1 && (
-          <Button type="button" variant="outline" onClick={handleBack} className="mt-4 w-full">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleBack}
+            className="mt-4 w-full"
+          >
             ← Back
           </Button>
         )}
@@ -414,45 +466,61 @@ const DeliveryPaymentStep = () => {
     customerData,
     progressStates,
     handleBack,
-    step
+    step,
   } = useOrderFormContext();
 
-  const totalAmount = React.useMemo(() => 
-    garments.reduce((sum: number, g: any) => 
-      sum + (g.designs?.reduce((dSum: number, d: any) => dSum + (Number(d.amount) || 0), 0) || 0), 0
-    ), [garments]
+  const totalAmount = React.useMemo(
+    () =>
+      garments.reduce(
+        (sum: number, g: any) =>
+          sum +
+          (g.designs?.reduce(
+            (dSum: number, d: any) => dSum + (Number(d.amount) || 0),
+            0
+          ) || 0),
+        0
+      ),
+    [garments]
   );
 
   // Memoize the submit handler
-  const onSubmit = React.useCallback(async (data: any) => {
-    try {
-      if (!deliveryForm.formState.isValid) {
-        toast.error("Please fill in all required fields");
-        return;
-      }
+  const onSubmit = React.useCallback(
+    async (data: any) => {
+      try {
+        if (!deliveryForm.formState.isValid) {
+          toast.error("Please fill in all required fields");
+          return;
+        }
 
-      if (data.payment === 'advance' && (!data.advanceAmount || Number(data.advanceAmount) <= 0)) {
-        toast.error("Please enter a valid advance amount");
-        return;
-      }
+        if (
+          data.payment === "advance" &&
+          (!data.advanceAmount || Number(data.advanceAmount) <= 0)
+        ) {
+          toast.error("Please enter a valid advance amount");
+          return;
+        }
 
-      if (!data.deliveryDate) {
-        toast.error("Please select a delivery date");
-        return;
-      }
+        if (!data.deliveryDate) {
+          toast.error("Please select a delivery date");
+          return;
+        }
 
-      await handleDeliverySubmit(data);
-      
-      // Success toast will be shown after the submission is complete
-      toast.success("Order submitted successfully!", {
-        description: "Processing your order...",
-        duration: 3000,
-      });
-    } catch (error) {
-      console.error('Order submission error:', error);
-      toast.error(error instanceof Error ? error.message : "Failed to submit order");
-    }
-  }, [handleDeliverySubmit, deliveryForm.formState.isValid]);
+        await handleDeliverySubmit(data);
+
+        // Success toast will be shown after the submission is complete
+        toast.success("Order submitted successfully!", {
+          description: "Processing your order...",
+          duration: 3000,
+        });
+      } catch (error) {
+        console.error("Order submission error:", error);
+        toast.error(
+          error instanceof Error ? error.message : "Failed to submit order"
+        );
+      }
+    },
+    [handleDeliverySubmit, deliveryForm.formState.isValid]
+  );
 
   return (
     <div className="min-h-screen py-4 px-2">
@@ -477,10 +545,24 @@ const DeliveryPaymentStep = () => {
                 Customer Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-sm">
-                <div><span className="font-medium">Name:</span> {customerData?.fullName}</div>
-                <div><span className="font-medium">Contact:</span> {customerData?.contactNumber}</div>
-                <div className="md:col-span-2"><span className="font-medium">Address:</span> {customerData?.fullAddress}</div>
-                {customerData?.email && <div><span className="font-medium">Email:</span> {customerData.email}</div>}
+                <div>
+                  <span className="font-medium">Name:</span>{" "}
+                  {customerData?.fullName}
+                </div>
+                <div>
+                  <span className="font-medium">Contact:</span>{" "}
+                  {customerData?.contactNumber}
+                </div>
+                <div className="md:col-span-2">
+                  <span className="font-medium">Address:</span>{" "}
+                  {customerData?.fullAddress}
+                </div>
+                {customerData?.email && (
+                  <div>
+                    <span className="font-medium">Email:</span>{" "}
+                    {customerData.email}
+                  </div>
+                )}
               </div>
             </div>
             <Separator />
@@ -492,14 +574,27 @@ const DeliveryPaymentStep = () => {
               </h3>
               <div className="space-y-1">
                 {garments.map((garment: any, idx: number) => {
-                  const garmentTotal = garment.designs?.reduce((sum: number, design: any) => sum + (Number(design.amount) || 0), 0) || 0;
+                  const garmentTotal =
+                    garment.designs?.reduce(
+                      (sum: number, design: any) =>
+                        sum + (Number(design.amount) || 0),
+                      0
+                    ) || 0;
                   return (
-                    <div key={idx} className="flex justify-between items-center p-1 bg-white rounded border">
+                    <div
+                      key={idx}
+                      className="flex justify-between items-center p-1 bg-white rounded border"
+                    >
                       <div>
                         <span className="font-medium">{garment.orderType}</span>
-                        <span className="text-gray-500 ml-1">({garment.variant})</span>
+                        <span className="text-gray-500 ml-1">
+                          ({garment.variant})
+                        </span>
                       </div>
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      <Badge
+                        variant="secondary"
+                        className="bg-green-100 text-green-800"
+                      >
                         ₹{garmentTotal.toFixed(2)}
                       </Badge>
                     </div>
@@ -507,8 +602,12 @@ const DeliveryPaymentStep = () => {
                 })}
               </div>
               <div className="mt-2 pt-2 border-t border-gray-200 flex justify-between items-center">
-                <span className="font-semibold text-gray-900">Total Amount:</span>
-                <span className="text-base font-bold text-blue-600">₹{totalAmount.toFixed(2)}</span>
+                <span className="font-semibold text-gray-900">
+                  Total Amount:
+                </span>
+                <span className="text-base font-bold text-blue-600">
+                  ₹{totalAmount.toFixed(2)}
+                </span>
               </div>
             </div>
             <Separator />
@@ -539,58 +638,94 @@ const DeliveryPaymentStep = () => {
                         <div className="w-8 h-8 bg-blue-600 rounded-full animate-ping opacity-75"></div>
                       </div>
                     </div>
-                    
+
                     {/* Loading Text */}
                     <div className="space-y-2">
-                      <h3 className="text-lg font-semibold text-gray-900">Processing Your Order</h3>
-                      <p className="text-sm text-gray-600">Please wait while we submit your order...</p>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Processing Your Order
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Please wait while we submit your order...
+                      </p>
                     </div>
-                    
+
                     {/* Progress Steps */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
-                        <span className={`${progressStates.orderData === 'completed' ? 'text-green-600 font-medium' : progressStates.orderData === 'processing' ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+                        <span
+                          className={`${
+                            progressStates.orderData === "completed"
+                              ? "text-green-600 font-medium"
+                              : progressStates.orderData === "processing"
+                              ? "text-blue-600 font-medium"
+                              : "text-gray-500"
+                          }`}
+                        >
                           Processing order data...
                         </span>
-                        {progressStates.orderData === 'completed' ? (
+                        {progressStates.orderData === "completed" ? (
                           <CheckCircle className="w-4 h-4 text-green-500" />
-                        ) : progressStates.orderData === 'processing' ? (
+                        ) : progressStates.orderData === "processing" ? (
                           <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
                         ) : (
                           <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                         )}
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className={`${progressStates.fileUpload === 'completed' ? 'text-green-600 font-medium' : progressStates.fileUpload === 'processing' ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+                        <span
+                          className={`${
+                            progressStates.fileUpload === "completed"
+                              ? "text-green-600 font-medium"
+                              : progressStates.fileUpload === "processing"
+                              ? "text-blue-600 font-medium"
+                              : "text-gray-500"
+                          }`}
+                        >
                           Uploading files to cloud...
                         </span>
-                        {progressStates.fileUpload === 'completed' ? (
+                        {progressStates.fileUpload === "completed" ? (
                           <CheckCircle className="w-4 h-4 text-green-500" />
-                        ) : progressStates.fileUpload === 'processing' ? (
+                        ) : progressStates.fileUpload === "processing" ? (
                           <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
                         ) : (
                           <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                         )}
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className={`${progressStates.pdfGeneration === 'completed' ? 'text-green-600 font-medium' : progressStates.pdfGeneration === 'processing' ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+                        <span
+                          className={`${
+                            progressStates.pdfGeneration === "completed"
+                              ? "text-green-600 font-medium"
+                              : progressStates.pdfGeneration === "processing"
+                              ? "text-blue-600 font-medium"
+                              : "text-gray-500"
+                          }`}
+                        >
                           Generating invoices...
                         </span>
-                        {progressStates.pdfGeneration === 'completed' ? (
+                        {progressStates.pdfGeneration === "completed" ? (
                           <CheckCircle className="w-4 h-4 text-green-500" />
-                        ) : progressStates.pdfGeneration === 'processing' ? (
+                        ) : progressStates.pdfGeneration === "processing" ? (
                           <div className="w-2 h-2 bg-purple-600 rounded-full animate-pulse"></div>
                         ) : (
                           <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                         )}
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className={`${progressStates.whatsapp === 'completed' ? 'text-green-600 font-medium' : progressStates.whatsapp === 'processing' ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+                        <span
+                          className={`${
+                            progressStates.whatsapp === "completed"
+                              ? "text-green-600 font-medium"
+                              : progressStates.whatsapp === "processing"
+                              ? "text-blue-600 font-medium"
+                              : "text-gray-500"
+                          }`}
+                        >
                           Sending WhatsApp confirmation...
                         </span>
-                        {progressStates.whatsapp === 'completed' ? (
+                        {progressStates.whatsapp === "completed" ? (
                           <CheckCircle className="w-4 h-4 text-green-500" />
-                        ) : progressStates.whatsapp === 'processing' ? (
+                        ) : progressStates.whatsapp === "processing" ? (
                           <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
                         ) : (
                           <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
@@ -633,26 +768,34 @@ const OrderConfirmationStep = () => {
     handleStartNewOrder,
     setStep,
     handleBack,
-    step
+    step,
   } = useOrderFormContext();
 
   const [modalImage, setModalImage] = React.useState<string | null>(null);
-  const [activeTab, setActiveTab] = React.useState<'summary' | 'details'>('summary');
+  const [activeTab, setActiveTab] = React.useState<"summary" | "details">(
+    "summary"
+  );
   // Simplified invoice status - PDFs are always ready on-demand
   const invoiceStatus = {
     customerInvoiceUrl: `/api/proxy-pdf?type=customer&oid=${orderOid}`,
     tailorInvoiceUrl: `/api/proxy-pdf?type=tailor&oid=${orderOid}`,
     pdfsGenerated: true,
-    checking: false
+    checking: false,
   };
 
   // Use submitted order data as primary source, with fallbacks to context data
   const displayCustomerData = submittedOrder || customerData;
   const displayGarments = submittedOrder?.garments || garments;
   const displayDeliveryData = submittedOrder || deliveryForm?.getValues();
-  
-  const totalAmount = displayGarments.reduce((sum: number, g: any) => 
-    sum + (g.designs?.reduce((dSum: number, d: any) => dSum + (Number(d.amount) || 0), 0) || 0), 0
+
+  const totalAmount = displayGarments.reduce(
+    (sum: number, g: any) =>
+      sum +
+      (g.designs?.reduce(
+        (dSum: number, d: any) => dSum + (Number(d.amount) || 0),
+        0
+      ) || 0),
+    0
   );
 
   if (!submittedOrder) {
@@ -666,7 +809,9 @@ const OrderConfirmationStep = () => {
             <CardTitle className="text-base font-bold text-red-600 mb-2">
               Order Not Found
             </CardTitle>
-            <p className="text-gray-600 mb-6">No order confirmation data available.</p>
+            <p className="text-gray-600 mb-6">
+              No order confirmation data available.
+            </p>
             <Button onClick={handleStartNewOrder} className="w-full">
               Start New Order
             </Button>
@@ -679,57 +824,87 @@ const OrderConfirmationStep = () => {
   // Check if PDFs are already generated (no background generation needed)
   React.useEffect(() => {
     if (orderOid && submittedOrder) {
-      console.log('[OrderFormSteps] Order confirmation page loaded, PDFs should be ready from order processing');
-      
+      console.log(
+        "[OrderFormSteps] Order confirmation page loaded, PDFs should be ready from order processing"
+      );
+
       // Check if PDFs are already generated
       if (submittedOrder.pdfsGenerated) {
-        console.log('[OrderFormSteps] PDFs already generated during order processing');
+        console.log(
+          "[OrderFormSteps] PDFs already generated during order processing"
+        );
       } else {
-        console.log('[OrderFormSteps] PDFs not found, will generate on-demand if needed');
+        console.log(
+          "[OrderFormSteps] PDFs not found, will generate on-demand if needed"
+        );
       }
     }
   }, [orderOid, submittedOrder]);
 
-    // Smart PDF access utility - use existing PDFs when available
-  const generatePDF = async (type: 'customer' | 'tailor', action: 'print' | 'download') => {
+  // Smart PDF access utility - always use proxy endpoint for reliable access
+  const generatePDF = async (
+    type: "customer" | "tailor",
+    action: "print" | "download"
+  ) => {
     if (!orderOid || !submittedOrder) {
-      toast.error('Order data not available for PDF access');
+      toast.error("Order data not available for PDF access");
       return;
     }
-    
-    // Check if PDF is already generated
-    const pdfUrl = type === 'customer' ? submittedOrder.customerInvoiceUrl : submittedOrder.tailorInvoiceUrl;
-    
-    if (pdfUrl && submittedOrder.pdfsGenerated) {
-      console.log(`[OrderFormSteps] Using existing ${type} PDF from Cloudinary:`, pdfUrl);
-      
-      // Show loading state
-      toast.loading(`Opening ${type} PDF...`, { id: `pdf-${type}-${action}` });
-      
-      try {
-        // Fetch existing PDF from Cloudinary
-        const response = await fetch(pdfUrl);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch PDF: ${response.status}`);
+
+    // Always use proxy endpoint - it handles both existing and new PDFs efficiently
+    console.log(
+      `[OrderFormSteps] Accessing ${type} PDF via proxy endpoint for order ${orderOid}`
+    );
+
+    // Show loading state
+    toast.loading(`Opening ${type} PDF...`, { id: `pdf-${type}-${action}` });
+
+    try {
+      // Use proxy endpoint - it will serve existing PDF if available, or generate on-demand
+      const url = `/api/proxy-pdf?type=${type}&oid=${orderOid}`;
+
+      const response = await fetch(url, {
+        method: "GET", // Use GET to access existing PDFs efficiently
+      });
+
+      if (!response.ok) {
+        // If GET fails, try POST to generate on-demand
+        console.log(
+          `[OrderFormSteps] GET failed, trying POST for on-demand generation`
+        );
+        const postResponse = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ order: submittedOrder }),
+        });
+
+        if (!postResponse.ok) {
+          const errorText = await postResponse.text();
+          throw new Error(
+            `PDF generation failed: ${postResponse.status} - ${errorText}`
+          );
         }
-        
-        const pdfBlob = await response.blob();
-        
+
+        const pdfBlob = await postResponse.blob();
+
         if (pdfBlob.size === 0) {
-          throw new Error('PDF is empty');
+          throw new Error("Generated PDF is empty");
         }
-        
-        console.log(`[OrderFormSteps] Existing PDF fetched successfully, size: ${pdfBlob.size} bytes`);
-        
+
+        console.log(
+          `[OrderFormSteps] PDF generated on-demand, size: ${pdfBlob.size} bytes`
+        );
+
         // Dismiss loading toast
         toast.dismiss(`pdf-${type}-${action}`);
-        
-        if (action === 'print') {
+
+        if (action === "print") {
           // Create object URL and open in new window for printing
-          const objectUrl = URL.createObjectURL(pdfBlob);
-          const win = window.open(objectUrl, '_blank');
-          
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          const win = window.open(pdfUrl, "_blank");
+
           if (win) {
             // Wait for PDF to load then print
             win.onload = () => {
@@ -737,83 +912,61 @@ const OrderConfirmationStep = () => {
                 win.print();
                 // Clean up object URL after printing
                 setTimeout(() => {
-                  URL.revokeObjectURL(objectUrl);
+                  URL.revokeObjectURL(pdfUrl);
                 }, 2000);
               }, 1000);
             };
           } else {
             // Fallback: download if popup blocked
-            const link = document.createElement('a');
-            link.href = objectUrl;
+            const link = document.createElement("a");
+            link.href = pdfUrl;
             link.download = `${type}_invoice_${orderOid}.pdf`;
             link.click();
-            setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+            setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
           }
-        } else if (action === 'download') {
+        } else if (action === "download") {
           // Create download link
-          const objectUrl = URL.createObjectURL(pdfBlob);
-          const link = document.createElement('a');
-          link.href = objectUrl;
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          const link = document.createElement("a");
+          link.href = pdfUrl;
           link.download = `${type}_invoice_${orderOid}.pdf`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
-          
+
           // Clean up
           setTimeout(() => {
-            URL.revokeObjectURL(objectUrl);
+            URL.revokeObjectURL(pdfUrl);
           }, 1000);
         }
-        
-        toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} PDF ${action === 'print' ? 'opened' : 'downloaded'} successfully!`);
+
+        toast.success(
+          `${type.charAt(0).toUpperCase() + type.slice(1)} PDF ${
+            action === "print" ? "opened" : "downloaded"
+          } successfully!`
+        );
         return;
-        
-      } catch (error) {
-        console.error(`[OrderFormSteps] Failed to fetch existing ${type} PDF:`, error);
-        toast.dismiss(`pdf-${type}-${action}`);
-        // Fall through to on-demand generation
       }
-    }
-    
-    // Fallback: Generate PDF on-demand if not available
-    console.log(`[OrderFormSteps] Generating ${type} PDF on-demand for order ${orderOid}`);
-    
-    // Show loading state
-    toast.loading(`Generating ${type} PDF...`, { id: `pdf-${type}-${action}` });
-    
-    try {
-    const url = `/api/proxy-pdf?type=${type}&oid=${orderOid}`;
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ order: submittedOrder }),
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`PDF generation failed: ${response.status} - ${errorText}`);
-      }
-      
-      // Get the PDF blob
+
+      // GET was successful - existing PDF found
       const pdfBlob = await response.blob();
-      
+
       if (pdfBlob.size === 0) {
-        throw new Error('Generated PDF is empty');
+        throw new Error("PDF is empty");
       }
-      
-      console.log(`[OrderFormSteps] PDF generated successfully, size: ${pdfBlob.size} bytes`);
-      
+
+      console.log(
+        `[OrderFormSteps] Existing PDF served via proxy, size: ${pdfBlob.size} bytes`
+      );
+
       // Dismiss loading toast
       toast.dismiss(`pdf-${type}-${action}`);
-      
-      if (action === 'print') {
+
+      if (action === "print") {
         // Create object URL and open in new window for printing
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        const win = window.open(pdfUrl, '_blank');
-        
+        const objectUrl = URL.createObjectURL(pdfBlob);
+        const win = window.open(objectUrl, "_blank");
+
         if (win) {
           // Wait for PDF to load then print
           win.onload = () => {
@@ -821,58 +974,62 @@ const OrderConfirmationStep = () => {
               win.print();
               // Clean up object URL after printing
               setTimeout(() => {
-                URL.revokeObjectURL(pdfUrl);
+                URL.revokeObjectURL(objectUrl);
               }, 2000);
             }, 1000);
           };
         } else {
           // Fallback: download if popup blocked
-          const link = document.createElement('a');
-          link.href = pdfUrl;
+          const link = document.createElement("a");
+          link.href = objectUrl;
           link.download = `${type}_invoice_${orderOid}.pdf`;
           link.click();
-          setTimeout(() => URL.revokeObjectURL(pdfUrl), 1000);
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
         }
-      } else if (action === 'download') {
+      } else if (action === "download") {
         // Create download link
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        const link = document.createElement('a');
-        link.href = pdfUrl;
+        const objectUrl = URL.createObjectURL(pdfBlob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
         link.download = `${type}_invoice_${orderOid}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Clean up
         setTimeout(() => {
-          URL.revokeObjectURL(pdfUrl);
+          URL.revokeObjectURL(objectUrl);
         }, 1000);
       }
-      
-      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} PDF ${action === 'print' ? 'opened' : 'downloaded'} successfully!`);
-      
+
+      toast.success(
+        `${type.charAt(0).toUpperCase() + type.slice(1)} PDF ${
+          action === "print" ? "opened" : "downloaded"
+        } successfully!`
+      );
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error("Error accessing PDF:", error);
       toast.dismiss(`pdf-${type}-${action}`);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       toast.error(`Failed to ${action} PDF: ${errorMessage}`);
     }
   };
 
-  const handlePrint = async (type: 'customer' | 'tailor') => {
-    await generatePDF(type, 'print');
+  const handlePrint = async (type: "customer" | "tailor") => {
+    await generatePDF(type, "print");
   };
 
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'My Sony Fashion Order',
+        title: "My Sony Fashion Order",
         text: `Check out my fashion order! Order ID: ${orderOid}`,
         url: window.location.href,
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard!');
+      toast.success("Link copied to clipboard!");
     }
   };
 
@@ -888,62 +1045,76 @@ const OrderConfirmationStep = () => {
               Order Confirmed!
             </CardTitle>
             <p className="text-gray-600">
-              Thank you for choosing Sony Fashion. We'll start working on your order right away.
+              Thank you for choosing Sony Fashion. We'll start working on your
+              order right away.
             </p>
             <div className="mt-4 space-y-1">
               <p className="text-sm text-gray-500">
-                Order ID: <span className="font-mono text-blue-600">{orderOid}</span>
+                Order ID:{" "}
+                <span className="font-mono text-blue-600">{orderOid}</span>
               </p>
               {orderDate && (
-                <p className="text-sm text-gray-500">
-                  Date: {orderDate}
-                </p>
+                <p className="text-sm text-gray-500">Date: {orderDate}</p>
               )}
             </div>
           </CardHeader>
-          
+
           <CardContent className="space-y-4">
             {/* Tab Navigation */}
             <div className="flex rounded-lg bg-gray-100 p-1">
               <button
-                onClick={() => setActiveTab('summary')}
+                onClick={() => setActiveTab("summary")}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-                  activeTab === 'summary'
-                    ? 'bg-white text-gray-900 shadow'
-                    : 'text-gray-600 hover:text-gray-900'
+                  activeTab === "summary"
+                    ? "bg-white text-gray-900 shadow"
+                    : "text-gray-600 hover:text-gray-900"
                 }`}
               >
                 Order Summary
               </button>
               <button
-                onClick={() => setActiveTab('details')}
+                onClick={() => setActiveTab("details")}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
-                  activeTab === 'details'
-                    ? 'bg-white text-gray-900 shadow'
-                    : 'text-gray-600 hover:text-gray-900'
+                  activeTab === "details"
+                    ? "bg-white text-gray-900 shadow"
+                    : "text-gray-600 hover:text-gray-900"
                 }`}
               >
                 Detailed View
               </button>
             </div>
 
-            {activeTab === 'summary' ? (
+            {activeTab === "summary" ? (
               <>
                 {/* Customer Details Card */}
-                  <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <User className="h-5 w-5 text-blue-600" />
-                        Customer Details
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-1 text-sm">
-                      <div><span className="font-medium">Name:</span> {displayCustomerData?.fullName || '-'}</div>
-                      <div><span className="font-medium">Contact:</span> {displayCustomerData?.contactNumber || '-'}</div>
-                      <div><span className="font-medium">Address:</span> {displayCustomerData?.fullAddress || '-'}</div>
-                    {displayCustomerData?.email && <div><span className="font-medium">Email:</span> {displayCustomerData.email}</div>}
-                    </CardContent>
-                  </Card>
+                <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <User className="h-5 w-5 text-blue-600" />
+                      Customer Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-1 text-sm">
+                    <div>
+                      <span className="font-medium">Name:</span>{" "}
+                      {displayCustomerData?.fullName || "-"}
+                    </div>
+                    <div>
+                      <span className="font-medium">Contact:</span>{" "}
+                      {displayCustomerData?.contactNumber || "-"}
+                    </div>
+                    <div>
+                      <span className="font-medium">Address:</span>{" "}
+                      {displayCustomerData?.fullAddress || "-"}
+                    </div>
+                    {displayCustomerData?.email && (
+                      <div>
+                        <span className="font-medium">Email:</span>{" "}
+                        {displayCustomerData.email}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
                 {/* Detailed Order Summary Table */}
                 <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-100">
@@ -958,16 +1129,31 @@ const OrderConfirmationStep = () => {
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-purple-100/50">
-                            <TableHead className="font-semibold text-purple-900">Item</TableHead>
-                            <TableHead className="font-semibold text-purple-900">Variant</TableHead>
-                            <TableHead className="font-semibold text-purple-900">Qty</TableHead>
-                            <TableHead className="font-semibold text-purple-900">Designs</TableHead>
-                            <TableHead className="font-semibold text-purple-900 text-right">Amount</TableHead>
+                            <TableHead className="font-semibold text-purple-900">
+                              Item
+                            </TableHead>
+                            <TableHead className="font-semibold text-purple-900">
+                              Variant
+                            </TableHead>
+                            <TableHead className="font-semibold text-purple-900">
+                              Qty
+                            </TableHead>
+                            <TableHead className="font-semibold text-purple-900">
+                              Designs
+                            </TableHead>
+                            <TableHead className="font-semibold text-purple-900 text-right">
+                              Amount
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {displayGarments.map((g: any, idx: number) => {
-                            const garmentTotal = g.designs?.reduce((sum: number, design: any) => sum + (Number(design.amount) || 0), 0) || 0;
+                            const garmentTotal =
+                              g.designs?.reduce(
+                                (sum: number, design: any) =>
+                                  sum + (Number(design.amount) || 0),
+                                0
+                              ) || 0;
                             return (
                               <React.Fragment key={idx}>
                                 <TableRow className="bg-white/60">
@@ -981,35 +1167,45 @@ const OrderConfirmationStep = () => {
                                     {g.quantity}
                                   </TableCell>
                                   <TableCell className="text-gray-600">
-                                    {g.designs?.length || 0} design{g.designs?.length !== 1 ? 's' : ''}
+                                    {g.designs?.length || 0} design
+                                    {g.designs?.length !== 1 ? "s" : ""}
                                   </TableCell>
                                   <TableCell className="text-right font-medium text-green-600">
                                     ₹{garmentTotal.toFixed(2)}
                                   </TableCell>
                                 </TableRow>
                                 {/* Design Details Sub-rows */}
-                                {g.designs && g.designs.map((design: any, designIdx: number) => (
-                                  <TableRow key={`${idx}-${designIdx}`} className="bg-gray-50/50">
-                                    <TableCell className="pl-8 text-sm text-gray-600">
-                                      • {design.name}
-                                    </TableCell>
-                                    <TableCell className="text-sm text-gray-500">
-                                      Design #{designIdx + 1}
-                                    </TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell className="text-right text-sm text-gray-600">
-                                      ₹{Number(design.amount).toFixed(2)}
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
+                                {g.designs &&
+                                  g.designs.map(
+                                    (design: any, designIdx: number) => (
+                                      <TableRow
+                                        key={`${idx}-${designIdx}`}
+                                        className="bg-gray-50/50"
+                                      >
+                                        <TableCell className="pl-8 text-sm text-gray-600">
+                                          • {design.name}
+                                        </TableCell>
+                                        <TableCell className="text-sm text-gray-500">
+                                          Design #{designIdx + 1}
+                                        </TableCell>
+                                        <TableCell></TableCell>
+                                        <TableCell></TableCell>
+                                        <TableCell className="text-right text-sm text-gray-600">
+                                          ₹{Number(design.amount).toFixed(2)}
+                                        </TableCell>
+                                      </TableRow>
+                                    )
+                                  )}
                               </React.Fragment>
                             );
                           })}
                         </TableBody>
                         <TableFooter>
                           <TableRow className="bg-green-100/50 border-t-2 border-green-200">
-                            <TableCell colSpan={4} className="text-right font-bold text-green-900">
+                            <TableCell
+                              colSpan={4}
+                              className="text-right font-bold text-green-900"
+                            >
                               Total Amount:
                             </TableCell>
                             <TableCell className="text-right font-bold text-green-900 text-lg">
@@ -1023,75 +1219,122 @@ const OrderConfirmationStep = () => {
                 </Card>
 
                 {/* Payment & Delivery Details Card */}
-                  <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-100">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <CreditCard className="h-5 w-5 text-green-600" />
+                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-100">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <CreditCard className="h-5 w-5 text-green-600" />
                       Payment & Delivery Details
-                      </CardTitle>
-                    </CardHeader>
+                    </CardTitle>
+                  </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Payment Section */}
                       <div className="space-y-3">
-                        <h4 className="font-semibold text-green-800 border-b border-green-200 pb-1">Payment Information</h4>
+                        <h4 className="font-semibold text-green-800 border-b border-green-200 pb-1">
+                          Payment Information
+                        </h4>
                         <div className="space-y-2">
-                                                  <div className="flex justify-between items-center">
-                          <span className="font-medium text-sm">Payment Method:</span>
-                          <Badge variant="outline" className="bg-green-50 text-green-700 capitalize text-xs">
-                            {displayDeliveryData?.payment || deliveryForm?.watch('payment') || 'Not specified'}
-                          </Badge>
-                      </div>
-                      {(displayDeliveryData?.payment === 'advance' || deliveryForm?.watch('payment') === 'advance') && (
-                        <>
-                              <div className="flex justify-between items-center">
-                                <span className="font-medium text-sm">Advance Amount:</span>
-                                <span className="text-green-600 font-medium">
-                                  ₹{Number(displayDeliveryData?.advanceAmount || deliveryForm?.watch('advanceAmount') || 0).toFixed(2)}
-                                </span>
-                          </div>
-                              <div className="flex justify-between items-center">
-                                <span className="font-medium text-sm">Balance Due:</span>
-                                <span className="text-rose-600 font-bold">
-                              ₹{(totalAmount - Number(displayDeliveryData?.advanceAmount || deliveryForm?.watch('advanceAmount') || 0)).toFixed(2)}
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-sm">
+                              Payment Method:
                             </span>
+                            <Badge
+                              variant="outline"
+                              className="bg-green-50 text-green-700 capitalize text-xs"
+                            >
+                              {displayDeliveryData?.payment ||
+                                deliveryForm?.watch("payment") ||
+                                "Not specified"}
+                            </Badge>
                           </div>
-                        </>
-                      )}
+                          {(displayDeliveryData?.payment === "advance" ||
+                            deliveryForm?.watch("payment") === "advance") && (
+                            <>
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium text-sm">
+                                  Advance Amount:
+                                </span>
+                                <span className="text-green-600 font-medium">
+                                  ₹
+                                  {Number(
+                                    displayDeliveryData?.advanceAmount ||
+                                      deliveryForm?.watch("advanceAmount") ||
+                                      0
+                                  ).toFixed(2)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium text-sm">
+                                  Balance Due:
+                                </span>
+                                <span className="text-rose-600 font-bold">
+                                  ₹
+                                  {(
+                                    totalAmount -
+                                    Number(
+                                      displayDeliveryData?.advanceAmount ||
+                                        deliveryForm?.watch("advanceAmount") ||
+                                        0
+                                    )
+                                  ).toFixed(2)}
+                                </span>
+                              </div>
+                            </>
+                          )}
                         </div>
-                </div>
+                      </div>
 
                       {/* Delivery Section */}
                       <div className="space-y-3">
-                        <h4 className="font-semibold text-green-800 border-b border-green-200 pb-1">Delivery Information</h4>
+                        <h4 className="font-semibold text-green-800 border-b border-green-200 pb-1">
+                          Delivery Information
+                        </h4>
                         <div className="space-y-2">
-                          {(displayDeliveryData?.deliveryDate || deliveryForm?.watch('deliveryDate')) && (
-                        <div className="flex justify-between items-center">
-                              <span className="font-medium text-sm">Delivery Date:</span>
-                              <span className="text-gray-600 text-sm">
-                                {formatDisplayDate(displayDeliveryData?.deliveryDate || deliveryForm?.watch('deliveryDate'))}
-                              </span>
-                          </div>
-                          )}
-                          {(displayDeliveryData?.urgency || deliveryForm?.watch('urgency')) && (
+                          {(displayDeliveryData?.deliveryDate ||
+                            deliveryForm?.watch("deliveryDate")) && (
                             <div className="flex justify-between items-center">
-                              <span className="font-medium text-sm">Urgency:</span>
-                              <Badge variant="outline" className={`text-xs ${
-                                (displayDeliveryData?.urgency || deliveryForm?.watch('urgency')) === 'urgent' 
-                                  ? 'bg-red-50 text-red-700 border-red-200' 
-                                  : 'bg-blue-50 text-blue-700 border-blue-200'
-                              } capitalize`}>
-                                {displayDeliveryData?.urgency || deliveryForm?.watch('urgency')}
-                          </Badge>
-                        </div>
-                          )}
-                          {(displayDeliveryData?.specialInstructions || deliveryForm?.watch('specialInstructions')) && (
-                            <div className="flex justify-between items-start">
-                              <span className="font-medium text-sm">Special Instructions:</span>
-                              <span className="text-gray-600 text-sm text-right max-w-[200px]">
-                                {displayDeliveryData?.specialInstructions || deliveryForm?.watch('specialInstructions')}
+                              <span className="font-medium text-sm">
+                                Delivery Date:
                               </span>
-                      </div>
+                              <span className="text-gray-600 text-sm">
+                                {formatDisplayDate(
+                                  displayDeliveryData?.deliveryDate ||
+                                    deliveryForm?.watch("deliveryDate")
+                                )}
+                              </span>
+                            </div>
+                          )}
+                          {(displayDeliveryData?.urgency ||
+                            deliveryForm?.watch("urgency")) && (
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium text-sm">
+                                Urgency:
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${
+                                  (displayDeliveryData?.urgency ||
+                                    deliveryForm?.watch("urgency")) === "urgent"
+                                    ? "bg-red-50 text-red-700 border-red-200"
+                                    : "bg-blue-50 text-blue-700 border-blue-200"
+                                } capitalize`}
+                              >
+                                {displayDeliveryData?.urgency ||
+                                  deliveryForm?.watch("urgency")}
+                              </Badge>
+                            </div>
+                          )}
+                          {(displayDeliveryData?.specialInstructions ||
+                            deliveryForm?.watch("specialInstructions")) && (
+                            <div className="flex justify-between items-start">
+                              <span className="font-medium text-sm">
+                                Special Instructions:
+                              </span>
+                              <span className="text-gray-600 text-sm text-right max-w-[200px]">
+                                {displayDeliveryData?.specialInstructions ||
+                                  deliveryForm?.watch("specialInstructions")}
+                              </span>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1104,7 +1347,10 @@ const OrderConfirmationStep = () => {
                 {/* Detailed View */}
                 <div className="space-y-4">
                   {displayGarments.map((g: any, idx: number) => (
-                    <Card key={idx} className="bg-gradient-to-br from-rose-50 to-pink-50 border-rose-100">
+                    <Card
+                      key={idx}
+                      className="bg-gradient-to-br from-rose-50 to-pink-50 border-rose-100"
+                    >
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base flex items-center justify-between">
                           <span className="flex items-center gap-2">
@@ -1118,25 +1364,40 @@ const OrderConfirmationStep = () => {
                       </CardHeader>
                       <CardContent className="space-y-3">
                         {/* Measurements */}
-                        {g.measurements && Object.keys(g.measurements).length > 0 && (
-                          <div className="bg-white/60 rounded-lg p-3">
-                            <h4 className="text-sm font-medium text-gray-900 mb-2">Measurements</h4>
-                            <div className="grid grid-cols-3 gap-2">
-                              {Object.entries(g.measurements).map(([key, value]) => (
-                                <div key={key} className="bg-white rounded p-2 text-xs">
-                                  <span className="block font-medium text-gray-700">{key}</span>
-                                  <span className="text-gray-600">{value as string}</span>
-                                </div>
-                              ))}
+                        {g.measurements &&
+                          Object.keys(g.measurements).length > 0 && (
+                            <div className="bg-white/60 rounded-lg p-3">
+                              <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                Measurements
+                              </h4>
+                              <div className="grid grid-cols-3 gap-2">
+                                {Object.entries(g.measurements).map(
+                                  ([key, value]) => (
+                                    <div
+                                      key={key}
+                                      className="bg-white rounded p-2 text-xs"
+                                    >
+                                      <span className="block font-medium text-gray-700">
+                                        {key}
+                                      </span>
+                                      <span className="text-gray-600">
+                                        {value as string}
+                                      </span>
+                                    </div>
+                                  )
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                        
+                          )}
+
                         {/* Designs */}
                         {g.designs && g.designs.length > 0 && (
                           <div className="space-y-3">
                             {g.designs.map((d: any, dIdx: number) => (
-                              <div key={dIdx} className="bg-white/60 rounded-lg p-3">
+                              <div
+                                key={dIdx}
+                                className="bg-white/60 rounded-lg p-3"
+                              >
                                 <div className="flex justify-between items-center mb-2">
                                   <h4 className="text-sm font-medium text-rose-600">
                                     Design #{dIdx + 1}: {d.name}
@@ -1146,23 +1407,31 @@ const OrderConfirmationStep = () => {
                                   </span>
                                 </div>
                                 {d.designDescription && (
-                                  <p className="text-xs text-gray-600 mb-2">{d.designDescription}</p>
+                                  <p className="text-xs text-gray-600 mb-2">
+                                    {d.designDescription}
+                                  </p>
                                 )}
                                 <div className="flex flex-wrap gap-2">
                                   {/* Design Reference Images */}
-                                  {d.designReferencePreviews && d.designReferencePreviews.map((img: string, imgIdx: number) => (
-                                    <div key={imgIdx} className="relative group">
-                                      <img
-                                        src={img}
-                                        alt={`Design Ref ${imgIdx + 1}`}
-                                        className="w-16 h-16 object-cover rounded-lg cursor-pointer border transition-transform duration-200 group-hover:scale-105"
-                                        onClick={() => setModalImage(img)}
-                                      />
-                                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
-                                        <Search className="w-4 h-4 text-white" />
-                                      </div>
-                                    </div>
-                                  ))}
+                                  {d.designReferencePreviews &&
+                                    d.designReferencePreviews.map(
+                                      (img: string, imgIdx: number) => (
+                                        <div
+                                          key={imgIdx}
+                                          className="relative group"
+                                        >
+                                          <img
+                                            src={img}
+                                            alt={`Design Ref ${imgIdx + 1}`}
+                                            className="w-16 h-16 object-cover rounded-lg cursor-pointer border transition-transform duration-200 group-hover:scale-105"
+                                            onClick={() => setModalImage(img)}
+                                          />
+                                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
+                                            <Search className="w-4 h-4 text-white" />
+                                          </div>
+                                        </div>
+                                      )
+                                    )}
                                   {/* Canvas Image */}
                                   {d.canvasImage && (
                                     <div className="relative group">
@@ -1170,7 +1439,9 @@ const OrderConfirmationStep = () => {
                                         src={d.canvasImage}
                                         alt="Canvas Drawing"
                                         className="w-16 h-16 object-contain rounded-lg cursor-pointer border transition-transform duration-200 group-hover:scale-105"
-                                        onClick={() => setModalImage(d.canvasImage)}
+                                        onClick={() =>
+                                          setModalImage(d.canvasImage)
+                                        }
                                       />
                                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
                                         <Search className="w-4 h-4 text-white" />
@@ -1200,13 +1471,17 @@ const OrderConfirmationStep = () => {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">PDF Generation:</span>
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  <Badge
+                    variant="outline"
+                    className="bg-green-50 text-green-700 border-green-200"
+                  >
                     <CheckCircle className="w-3 h-3 mr-1" />
                     Ready
                   </Badge>
                 </div>
                 <p className="text-xs text-green-600 mt-1">
-                  ✅ PDFs are generated during order processing! Click print to view your invoice instantly.
+                  ✅ PDFs are generated during order processing! Click print to
+                  view your invoice instantly.
                 </p>
               </CardContent>
             </Card>
@@ -1214,23 +1489,23 @@ const OrderConfirmationStep = () => {
             {/* Action Buttons */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 pt-4">
               <Button
-                onClick={() => handlePrint('customer')}
+                onClick={() => handlePrint("customer")}
                 variant="outline"
                 className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700"
               >
                 <Printer className="h-4 w-4" />
                 <span className="hidden sm:inline">Customer</span> Copy
               </Button>
-              
+
               <Button
-                onClick={() => handlePrint('tailor')}
+                onClick={() => handlePrint("tailor")}
                 variant="outline"
                 className="flex items-center gap-2 bg-purple-50 hover:bg-purple-100 text-purple-700"
               >
                 <Printer className="h-4 w-4" />
                 <span className="hidden sm:inline">Tailor</span> Copy
               </Button>
-              
+
               <Button
                 onClick={handleShare}
                 variant="outline"
@@ -1239,16 +1514,16 @@ const OrderConfirmationStep = () => {
                 <Share2 className="h-4 w-4" />
                 Share
               </Button>
-              
+
               <Button
-                onClick={() => generatePDF('customer', 'download')}
+                onClick={() => generatePDF("customer", "download")}
                 variant="outline"
                 className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700"
               >
                 <Download className="h-4 w-4" />
                 Download
               </Button>
-              
+
               <Button
                 onClick={handleStartNewOrder}
                 className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white"
@@ -1263,7 +1538,7 @@ const OrderConfirmationStep = () => {
 
       {/* Image Preview Modal */}
       {modalImage && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
           onClick={() => setModalImage(null)}
         >
@@ -1276,11 +1551,15 @@ const OrderConfirmationStep = () => {
             >
               <X className="h-4 w-4" />
             </Button>
-            <img 
-              src={modalImage} 
-              alt="Preview" 
+            <img
+              src={modalImage}
+              alt="Preview"
               className="rounded-lg shadow-2xl"
-              style={{ maxHeight: '80vh', maxWidth: '90vw', objectFit: 'contain' }} 
+              style={{
+                maxHeight: "80vh",
+                maxWidth: "90vw",
+                objectFit: "contain",
+              }}
             />
           </div>
         </div>
@@ -1315,7 +1594,7 @@ export function OrderFormSteps() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <EnhancedStepper />
-      
+
       {(() => {
         const { step } = useOrderFormContext();
         switch (step) {
@@ -1333,4 +1612,4 @@ export function OrderFormSteps() {
       })()}
     </div>
   );
-} 
+}

@@ -161,7 +161,7 @@ async function generateSinglePDF(type: 'customer' | 'tailor', order: any) {
     // Generate PDF with timeout
     const pdfPromise = generatePdf(html);
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('PDF generation timeout after 30 seconds')), 30000);
+      setTimeout(() => reject(new Error('PDF generation timeout after 90 seconds')), 90000);
     });
     
     const pdfBuffer = await Promise.race([pdfPromise, timeoutPromise]) as Buffer;

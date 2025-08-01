@@ -19,35 +19,17 @@ export function getTailorInvoiceHtml(order: any) {
   function renderDesignImages(design: any, garment: any) {
     let images: string[] = [];
     
-    // Render actual design reference images
-    if (Array.isArray(design?.designReferenceFiles)) {
-      design.designReferenceFiles.forEach((file: any) => {
-        if (file?.url) {
-          images.push(`<img src="${file.url}" alt="Reference" class="design-image" />`);
-        } else if (file?.secure_url) {
-          images.push(`<img src="${file.secure_url}" alt="Reference" class="design-image" />`);
-        }
-      });
-    }
+    // Check for reference images but show placeholders to avoid PDF timeout
+    const hasReferenceImages = (Array.isArray(design?.designReferenceFiles) && design.designReferenceFiles.length > 0) ||
+                              (Array.isArray(garment?.designReferenceFiles) && garment.designReferenceFiles.length > 0);
     
-    // Also check for designReferenceFiles in garment level
-    if (Array.isArray(garment?.designReferenceFiles)) {
-      garment.designReferenceFiles.forEach((file: any) => {
-        if (file?.url) {
-          images.push(`<img src="${file.url}" alt="Reference" class="design-image" />`);
-        } else if (file?.secure_url) {
-          images.push(`<img src="${file.secure_url}" alt="Reference" class="design-image" />`);
-        }
-      });
-    }
+    const hasCanvasImage = design?.canvasImage || garment?.measurement?.canvasImageFile;
     
-    // Render canvas image
-    if (design?.canvasImage) {
-      images.push(`<img src="${design.canvasImage}" alt="Canvas" class="canvas-image" />`);
-    } else if (garment?.measurement?.canvasImageFile?.url) {
-      images.push(`<img src="${garment.measurement.canvasImageFile.url}" alt="Canvas" class="canvas-image" />`);
-    } else if (garment?.measurement?.canvasImageFile?.secure_url) {
-      images.push(`<img src="${garment.measurement.canvasImageFile.secure_url}" alt="Canvas" class="canvas-image" />`);
+    if (hasReferenceImages) {
+      images.push('<div class="image-placeholder">Reference Images Available</div>');
+    }
+    if (hasCanvasImage) {
+      images.push('<div class="image-placeholder canvas">Canvas Available</div>');
     }
     
     // Fallback placeholders if no images
@@ -201,18 +183,6 @@ export function getTailorInvoiceHtml(order: any) {
     
     .design-images {
       margin-top: 8px;
-    }
-    
-    .design-image, .canvas-image {
-      width: 150px;
-      height: 100px;
-      object-fit: cover;
-      border: 2px solid #2563eb;
-      margin: 2px;
-    }
-    
-    .canvas-image {
-      border-color: #dc2626;
     }
     
     .image-placeholder {

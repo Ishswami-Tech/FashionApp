@@ -76,6 +76,8 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
               amount: "",
               designReference: [],
               designReferencePreviews: [],
+              clothImages: [],
+              clothImagePreviews: [],
               designDescription: "",
               canvasImage: "",
               canvasJson: undefined,
@@ -341,8 +343,10 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                       />
                     </div>
                   </div>
-                  {/* Design Reference Images Preview & Upload */}
-                  <div className="mt-2">
+                  {/* Design Reference Images & Cloth Images */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    {/* Design Reference Images */}
+                    <div>
                     <label className="block font-medium mb-1 text-sm text-gray-700">
                       Design Reference Images (max 5)
                     </label>
@@ -371,22 +375,22 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                         disabled={designs[idx].designReference?.length >= 5}
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                        <span className="text-gray-400 text-sm">📷</span>
+                          <span className="text-gray-400 text-sm">🎨</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <p className="text-xs text-gray-500">
-                        📱 Choose from gallery or take photos with camera
+                          Design inspiration & style references
                       </p>
                       <span className="text-xs text-blue-600 font-medium">
                         ({designs[idx].designReference?.length || 0}/5)
                       </span>
                     </div>
-                    {/* Image Previews */}
+                      {/* Design Reference Image Previews */}
                     {(designs[idx].designReferencePreviews || []).length > 0 ? (
                       <div className="mt-3">
                         <p className="text-xs text-gray-600 mb-2 font-medium">
-                          📸 Selected Images:
+                            🎨 Design References:
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {(designs[idx].designReferencePreviews || []).map(
@@ -394,13 +398,13 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                               <div key={i} className="relative group">
                                 <img
                                   src={url}
-                                  alt={`Reference ${i + 1}`}
-                                  className="w-20 h-20 object-cover border rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                                    alt={`Design Reference ${i + 1}`}
+                                    className="w-16 h-16 object-cover border rounded-lg shadow-sm hover:shadow-md transition-shadow"
                                 />
                                 {/* Remove button */}
                                 <button
                                   type="button"
-                                  className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold transition-colors"
+                                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold transition-colors"
                                   onClick={() => {
                                     setDesigns((prev) => {
                                       const arr = [...prev];
@@ -417,7 +421,7 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                                       return arr;
                                     });
                                   }}
-                                  aria-label="Remove image"
+                                    aria-label="Remove design reference"
                                 >
                                   ×
                                 </button>
@@ -431,13 +435,111 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <div className="mt-3 p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                        <div className="mt-3 p-2 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
                         <p className="text-xs text-gray-500 text-center">
-                          📱 No images selected yet. Tap above to choose from
-                          gallery or take photos!
+                            🎨 No design references yet
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Cloth Images */}
+                    <div>
+                      <label className="block font-medium mb-1 text-sm text-gray-700">
+                        Cloth/Fabric Images (max 3)
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            setDesigns((prev) => {
+                              const arr = [...prev];
+                              arr[idx].clothImages = files.slice(0, 3);
+                              arr[idx].clothImagePreviews = files
+                                .slice(0, 3)
+                                .map((file) =>
+                                  typeof file === "string"
+                                    ? file
+                                    : URL.createObjectURL(file)
+                                );
+                              return arr;
+                            });
+                            e.target.value = ""; // Clear input to allow re-uploading the same file
+                          }}
+                          className="w-full cursor-pointer"
+                          disabled={designs[idx].clothImages?.length >= 3}
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <span className="text-gray-400 text-sm">🧵</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-gray-500">
+                          Fabric samples & material photos
+                        </p>
+                        <span className="text-xs text-green-600 font-medium">
+                          ({designs[idx].clothImages?.length || 0}/3)
+                        </span>
+                      </div>
+                      {/* Cloth Image Previews */}
+                      {(designs[idx].clothImagePreviews || []).length > 0 ? (
+                        <div className="mt-3">
+                          <p className="text-xs text-gray-600 mb-2 font-medium">
+                            🧵 Cloth/Fabric Images:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {(designs[idx].clothImagePreviews || []).map(
+                              (url: string, i: number) => (
+                                <div key={i} className="relative group">
+                                  <img
+                                    src={url}
+                                    alt={`Cloth ${i + 1}`}
+                                    className="w-16 h-16 object-cover border rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                                  />
+                                  {/* Remove button */}
+                                  <button
+                                    type="button"
+                                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold transition-colors"
+                                    onClick={() => {
+                                      setDesigns((prev) => {
+                                        const arr = [...prev];
+                                        arr[idx].clothImages = arr[
+                                          idx
+                                        ].clothImages.filter(
+                                          (item: any, j: number) => j !== i
+                                        );
+                                        arr[idx].clothImagePreviews = arr[
+                                          idx
+                                        ].clothImagePreviews.filter(
+                                          (item: any, j: number) => j !== i
+                                        );
+                                        return arr;
+                                      });
+                                    }}
+                                    aria-label="Remove cloth image"
+                                  >
+                                    ×
+                                  </button>
+                                  {/* Image number badge */}
+                                  <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 text-white text-xs px-1 rounded">
+                                    {i + 1}
+                                  </div>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-3 p-2 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                          <p className="text-xs text-gray-500 text-center">
+                            🧵 No cloth images yet
                         </p>
                       </div>
                     )}
+                    </div>
                   </div>
                   <div className="mt-3">
                     <label className="block font-medium mb-1 text-sm text-gray-700">

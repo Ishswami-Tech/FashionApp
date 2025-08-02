@@ -364,6 +364,8 @@ export async function POST(req: NextRequest) {
     // 3. Process all garments in parallel for faster uploads
     const dateFolder = formattedDate.replace(/\//g, '-'); // e.g. 11-07-2025
     
+    // PDF generation will happen after all images are uploaded to Cloudinary
+
     // Process all garments in parallel with better error handling
     const processedGarments = await Promise.all(garments.map(async (garment, i) => {
       try {
@@ -371,6 +373,9 @@ export async function POST(req: NextRequest) {
       const garmentType = (garment.order?.orderType || 'GARMENT').replace(/\s+/g, '').toUpperCase();
       const orderSeq = oid.split('-').pop() || '000';
       const garmentIndex = i + 1;
+      
+      // Track upload promises for this garment
+      const uploadPromises = [];
       
       // Upload canvasImage file to Cloudinary if present
       if (files[`canvasImage_${i}`]) {
@@ -396,34 +401,40 @@ export async function POST(req: NextRequest) {
         const businessName = `ORD+${garmentType}+${orderSeq}+${garmentIndex}+CANVAS+${imageNum}`;
         const folder = `orders/${dateFolder}/${oid}`;
           
-          try {
-        const result = await new Promise((resolve, reject) => {
-          cloudinary.uploader.upload_stream(
-                { 
-                  resource_type: 'image', 
-                  public_id: businessName.replace(/\+/g, '_'), 
-                  folder,
-                  format: 'png' // Explicitly set format
-                },
-            (error, result) => {
-                  if (error) {
-                    console.error(`Cloudinary upload error for canvasImage_${i}_${fileIndex}:`, error);
-                    reject(error);
-                  } else {
-                    console.log(`Cloudinary upload success for canvasImage_${i}_${fileIndex}:`, result);
-                    resolve(result);
-                  }
-            }
-          ).end(file.buffer);
-        });
-            uploadedFiles.push({ url: result.secure_url, originalname: businessName });
-          } catch (uploadError) {
-            console.error(`Failed to upload canvasImage_${i}_${fileIndex}:`, uploadError);
-          }
+                    const uploadPromise = new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+              { 
+                resource_type: 'image', 
+                public_id: businessName.replace(/\+/g, '_'), 
+                folder,
+                format: 'png'
+              },
+              (error, result) => {
+                if (error) {
+                  console.error(`Cloudinary upload error for canvasImage_${i}_${fileIndex}:`, error);
+                  reject(error);
+                } else {
+                  console.log(`Cloudinary upload success for canvasImage_${i}_${fileIndex}:`, result);
+                  resolve({ url: result.secure_url, originalname: businessName });
+                }
+              }
+            ).end(file.buffer);
+          });
+
+          uploadPromises.push(uploadPromise);
         }
-        
-        // Set the first uploaded file as the main canvas image, or undefined if none uploaded
-        measurement.canvasImageFile = uploadedFiles.length > 0 ? uploadedFiles[0] : undefined;
+
+        try {
+          const results = await Promise.allSettled(uploadPromises);
+          const successfulUploads = results
+            .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+            .map(result => result.value);
+          
+          // Set the first successfully uploaded file as the main canvas image
+          measurement.canvasImageFile = successfulUploads.length > 0 ? successfulUploads[0] : undefined;
+        } catch (uploadError) {
+          console.error(`Failed to process canvas image uploads for garment ${i}:`, uploadError);
+        }
       } else {
         measurement.canvasImageFile = undefined;
       }
@@ -482,9 +493,61 @@ export async function POST(req: NextRequest) {
           const results = await Promise.all(uploadPromises);
           designRefs.push(...results);
           
+          // Upload cloth images for this design
+          const clothRefs = [];
+          const clothUploadPromises = [];
+          let k = 0;
+          
+          // Collect all cloth image upload promises for this design
+          while (files[`clothImage_${i}_${d}_${k}`]) {
+            const file = files[`clothImage_${i}_${d}_${k}`];
+            
+            // Check if buffer is valid
+            if (!file.buffer || file.buffer.length === 0) {
+              console.warn(`Empty buffer for clothImage_${i}_${d}_${k}, skipping upload`);
+              k++;
+              continue;
+            }
+            
+            const fileMimetype = file.mimetype || 'image/png';
+            const imageNum = k + 1;
+            const businessName = `ORD+${garmentType}+${orderSeq}+${garmentIndex}+CLOTH+${d + 1}+${imageNum}`;
+            const folder = `orders/${dateFolder}/${oid}`;
+            
+            const uploadPromise = new Promise((resolve, reject) => {
+              console.log(`Using mimetype: ${fileMimetype} for clothImage_${i}_${d}_${k}`);
+              
+              cloudinary.uploader.upload_stream(
+                { 
+                  resource_type: 'image', 
+                  public_id: businessName.replace(/\+/g, '_'), 
+                  folder,
+                  format: 'png' // Explicitly set format
+                },
+                (error, result) => {
+                  if (error) {
+                    console.error(`Cloudinary upload error for clothImage_${i}_${d}_${k}:`, error);
+                    reject(error);
+                  } else {
+                    console.log(`Cloudinary upload success for clothImage_${i}_${d}_${k}:`, result);
+                    resolve({ url: result.secure_url, originalname: businessName });
+                  }
+                }
+              ).end(file.buffer);
+            });
+            
+            clothUploadPromises.push(uploadPromise);
+            k++;
+          }
+          
+          // Wait for all cloth uploads to complete
+          const clothResults = await Promise.all(clothUploadPromises);
+          clothRefs.push(...clothResults);
+          
           return {
             ...design,
-            designReferenceFiles: designRefs
+            designReferenceFiles: designRefs,
+            clothImageFiles: clothRefs
           };
         }));
         

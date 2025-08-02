@@ -276,6 +276,20 @@ export const OrderFormProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               });
             }
             
+            // Append cloth images
+            if (design.clothImages && Array.isArray(design.clothImages)) {
+              design.clothImages.forEach((file: any, fileIndex: number) => {
+                if (file instanceof File) {
+                  console.log(`[OrderFormContext] Appending File object: clothImage_${garmentIndex}_${designIndex}_${fileIndex}`);
+                  formData.append(`clothImage_${garmentIndex}_${designIndex}_${fileIndex}`, file);
+                } else if (typeof file === 'string' && file.startsWith('data:image/')) {
+                  console.log(`[OrderFormContext] Converting data URL to blob: clothImage_${garmentIndex}_${designIndex}_${fileIndex}`);
+                  const blob = dataURLtoBlob(file);
+                  formData.append(`clothImage_${garmentIndex}_${designIndex}_${fileIndex}`, blob, `cloth_${garmentIndex}_${designIndex}_${fileIndex}.png`);
+                }
+              });
+            }
+            
             // Append canvas image from design if exists
             if (design.canvasImage && design.canvasImage.startsWith('data:image/')) {
               console.log(`[OrderFormContext] Found canvas image in design ${designIndex} for garment ${garmentIndex}`);

@@ -139,7 +139,7 @@ export function getCustomerInvoiceHtml(order: any) {
     }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      background: #f5f7fa;
       min-height: 100vh;
       padding: 8px;
       font-size: 10px;
@@ -149,36 +149,13 @@ export function getCustomerInvoiceHtml(order: any) {
       margin: 0 auto;
       background: white;
       border-radius: 10px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-      overflow: hidden;
+      border: 2px solid #c3cfe2;
     }
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #667eea;
       color: white;
       padding: 16px;
       text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .header::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 10px,
-        rgba(255,255,255,0.1) 10px,
-        rgba(255,255,255,0.1) 20px
-      );
-      animation: shimmer 20s linear infinite;
-    }
-    @keyframes shimmer {
-      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-      100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
     }
     .header h1 {
       font-size: 28px;
@@ -202,7 +179,7 @@ export function getCustomerInvoiceHtml(order: any) {
       box-shadow: 0 2px 4px rgba(0,0,0,0.03);
     }
     .section-title {
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      background: #4facfe;
       color: white;
       padding: 8px 12px;
       font-weight: 600;
@@ -250,7 +227,7 @@ export function getCustomerInvoiceHtml(order: any) {
       border: 2px solid #e0e0e0;
     }
     .total-section {
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      background: #4facfe;
       color: white;
       padding: 20px;
       border-radius: 10px;
@@ -270,7 +247,7 @@ export function getCustomerInvoiceHtml(order: any) {
       margin-top: 15px;
     }
     .highlight {
-      background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+      background: #fff3cd;
       border: 2px solid #ffd700;
       border-radius: 10px;
       padding: 15px;
@@ -306,12 +283,11 @@ export function getCustomerInvoiceHtml(order: any) {
       text-align: right;
     }
     .summary-card {
-      background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+      background: #f3e8ff;
       border: 2px solid #a78bfa;
       border-radius: 12px;
       padding: 18px 24px;
       margin-bottom: 18px;
-      box-shadow: 0 2px 8px rgba(80,0,200,0.06);
       font-size: 15px;
       font-weight: 500;
       color: #4b2995;
@@ -417,23 +393,7 @@ export function getCustomerInvoiceHtml(order: any) {
       <p>📍 Shop Address: ${shopAddress} | 📞 ${shopPhone} | 📧 ${shopEmail}</p>
     </div>
   </div>
-  <script>
-    // Add some interactivity for demo
-    document.addEventListener('DOMContentLoaded', function() {
-      const sections = document.querySelectorAll('.section');
-      sections.forEach((section, index) => {
-        setTimeout(() => {
-          section.style.opacity = '0';
-          section.style.transform = 'translateY(20px)';
-          section.style.transition = 'all 0.6s ease';
-          setTimeout(() => {
-            section.style.opacity = '1';
-            section.style.transform = 'translateY(0)';
-          }, 100);
-        }, index * 100);
-      });
-    });
-  </script>
+  
 </body>
 </html>`;
 } 

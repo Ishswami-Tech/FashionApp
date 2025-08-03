@@ -30,9 +30,9 @@ export const DeliveryPaymentForm: React.FC<DeliveryPaymentFormProps> = ({
     e.preventDefault();
     const formData = deliveryForm.getValues();
     
-    // Convert the date to a string format
+    // Convert the date to DD/MM/YYYY format to match API expectations
     if (formData.deliveryDate instanceof Date) {
-      formData.deliveryDate = format(formData.deliveryDate, 'yyyy-MM-dd');
+      formData.deliveryDate = format(formData.deliveryDate, 'dd/MM/yyyy');
     }
 
     // Ensure advance amount is a number

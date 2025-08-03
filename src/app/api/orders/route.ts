@@ -736,11 +736,30 @@ export async function POST(req: NextRequest) {
         garmentsSummary,
         updatedOrder.totalAmount || "-",
         updatedOrder.deliveryDate
-          ? new Date(updatedOrder.deliveryDate).toLocaleDateString("en-IN", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })
+          ? (() => {
+              // Handle DD/MM/YYYY format properly
+              let d: Date;
+              if (updatedOrder.deliveryDate.includes('/')) {
+                const parts = updatedOrder.deliveryDate.split('/');
+                if (parts.length === 3) {
+                  d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                } else {
+                  d = new Date(updatedOrder.deliveryDate);
+                }
+              } else {
+                d = new Date(updatedOrder.deliveryDate);
+              }
+              
+              if (isNaN(d.getTime())) {
+                return "Invalid date";
+              }
+              
+              return d.toLocaleDateString("en-IN", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              });
+            })()
           : "-",
         advancePaid,
         amountDue,

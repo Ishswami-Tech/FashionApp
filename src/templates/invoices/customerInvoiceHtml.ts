@@ -11,18 +11,41 @@ export function getCustomerInvoiceHtml(order: any) {
   const orderTotalAmount = typeof order?.totalAmount === 'number' ? order.totalAmount : 
                           typeof order?.totalAmount === 'string' ? parseFloat(order.totalAmount) || 0 : 0;
   
-  const currentDate = order?.orderDate || new Date().toLocaleDateString();
   const orderId = order?.oid || 'N/A';
   
   console.log(`[Customer Invoice] Processing order ${orderId} with ${garmentsData.length} garments`);
 
   // Format date for display (e.g., July 20, 2025)
-  function formatDisplayDate(dateStr: string) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+  function formatDisplayDate(dateStr: string | undefined) {
+    if (!dateStr) return "No date";
+    
+    // Try to parse the date
+    let d: Date;
+    
+    // Handle different date formats
+    if (dateStr.includes('/')) {
+      // Handle DD/MM/YYYY format
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      } else {
+        d = new Date(dateStr);
+      }
+    } else {
+      d = new Date(dateStr);
+    }
+    
+    // If date is still invalid, return error message
+    if (isNaN(d.getTime())) {
+      console.warn(`[Customer Invoice] Invalid date: ${dateStr}`);
+      return "Invalid date";
+    }
+    
     return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
   }
+
+  // Get the current/order date with proper formatting
+  const currentDate = formatDisplayDate(order?.orderDate || order?.createdAt);
 
   // At the start of the garment summary rendering, filter out garments with no designs:
   const validGarments = Array.isArray(order.garments) ? order.garments.filter((g: any) => Array.isArray(g.designs) && g.designs.length > 0) : [];
@@ -325,7 +348,7 @@ export function getCustomerInvoiceHtml(order: any) {
       <h1>🎯 Your Order Confirmation</h1>
       <h2 style="margin: 10px 0; font-size: 18px;">Sony Fashion</h2>
       <p>Order ID: ${orderId}</p>
-      <p>Date: ${formatDisplayDate(currentDate)}</p>
+      <p>Date: ${currentDate}</p>
     </div>
     <div class="content">
       <div class="summary-card">

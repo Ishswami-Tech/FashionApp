@@ -16,51 +16,118 @@ export function getTailorInvoiceHtml(order: any) {
   
   console.log(`[Tailor Invoice] Processing order ${orderIdValue} with ${garmentsData.length} garments`);
 
-  function renderDesignImages(design: any, garment: any) {
+  // Helper function to generate potential Cloudinary URLs based on order structure
+  function generateCloudinaryURL(orderOid: string, garmentIndex: number, designIndex: number, imageType: 'REF' | 'CLOTH', imageNum: number): string {
+    // Based on API upload logic: ORD+${garmentType}+${orderSeq}+${garmentIndex}+${imageType}+${designIndex}+${imageNum}
+    const orderSeq = orderOid.slice(-3); // Last 3 digits
+    const dateFolder = orderOid.slice(0, 8); // First 8 digits (YYYYMMDD)
+    const formattedDate = `${dateFolder.slice(6, 8)}-${dateFolder.slice(4, 6)}-${dateFolder.slice(0, 4)}`; // DD-MM-YYYY
+    
+    // We'll try a generic garment type since we don't have access to the original type
+    const garmentType = 'GARMENT';
+    const businessName = `ORD_${garmentType}_${orderSeq}_${garmentIndex + 1}_${imageType}_${designIndex + 1}_${imageNum}`;
+    
+    return `https://res.cloudinary.com/your-cloud-name/image/upload/orders/${formattedDate}/${orderOid}/${businessName}.png`;
+  }
+
+  function renderDesignImages(design: any, garment: any, garmentIndex: number = 0, designIndex: number = 0) {
     let images: string[] = [];
     let hasReferenceImages = false;
     let hasCanvasImage = false;
     
-    // Handle design reference images - prioritize Cloudinary URLs
-    if (design?.designReferenceFiles?.length > 0) {
-      design.designReferenceFiles.forEach((file: any) => {
-        const url = file?.secure_url || file?.url || file;
-        if (url && !url.startsWith('blob:')) {
-          images.push(`<img src="${url}" alt="Reference" class="design-image" />`);
+    const refFiles = design?.designReferenceFiles?.length || 0;
+    const refItems = design?.designReference?.length || 0;
+    const refPreviews = design?.designReferencePreviews?.length || 0;
+    const hasCanvas = !!(design?.canvasImage || garment?.measurement?.canvasImageFile?.url);
+    
+    console.log(`[Tailor Invoice] Images: REF_FILES:${refFiles} REF_ITEMS:${refItems} REF_PREVIEWS:${refPreviews} CANVAS:${hasCanvas}`);
+    
+    // Handle design reference images - check multiple possible locations
+    
+    // 1. First check for designReferenceFiles (uploaded Cloudinary files)
+    if (Array.isArray(design?.designReferenceFiles) && design.designReferenceFiles.length > 0) {
+      design.designReferenceFiles.forEach((file: any, index: number) => {
+        const url = file?.url || file?.secure_url || file;
+        if (url && typeof url === 'string' && !url.startsWith('blob:')) {
+          images.push(`<img src="${url}" alt="Reference ${index + 1}" class="design-image" />`);
           hasReferenceImages = true;
-        }
-      });
-    } else if (garment?.designReferenceFiles?.length > 0) {
-      garment.designReferenceFiles.forEach((file: any) => {
-        const url = file?.secure_url || file?.url || file;
-        if (url && !url.startsWith('blob:')) {
-          images.push(`<img src="${url}" alt="Reference" class="design-image" />`);
-          hasReferenceImages = true;
-        }
-      });
-    } else if (design?.designReferencePreviews?.length > 0) {
-      design.designReferencePreviews.forEach((preview: string) => {
-        if (!preview.startsWith('blob:')) {
-          images.push(`<img src="${preview}" alt="Reference" class="design-image" />`);
-          hasReferenceImages = true;
+          console.log(`[Tailor Invoice] ✅ REF_FILE ${index + 1}: ${url.substring(0, 50)}...`);
         }
       });
     }
     
-    // Use canvas image - prioritize Cloudinary URLs
+    // 2. Fallback to designReference array (contains File objects or URLs)
+    if (!hasReferenceImages && Array.isArray(design?.designReference) && design.designReference.length > 0) {
+      design.designReference.forEach((file: any, index: number) => {
+        const url = file?.url || file?.secure_url || file;
+        if (url && typeof url === 'string' && !url.startsWith('blob:')) {
+          images.push(`<img src="${url}" alt="Reference ${index + 1}" class="design-image" />`);
+          hasReferenceImages = true;
+          console.log(`[Tailor Invoice] ✅ REF_ITEM ${index + 1}: ${url.substring(0, 50)}...`);
+        }
+      });
+    }
+    
+    // 3. Last resort: try designReferencePreviews but only non-blob URLs
+    if (!hasReferenceImages && Array.isArray(design?.designReferencePreviews) && design.designReferencePreviews.length > 0) {
+      design.designReferencePreviews.forEach((preview: string, index: number) => {
+        if (preview && typeof preview === 'string' && !preview.startsWith('blob:')) {
+          images.push(`<img src="${preview}" alt="Reference ${index + 1}" class="design-image" />`);
+          hasReferenceImages = true;
+          console.log(`[Tailor Invoice] ✅ REF_PREVIEW ${index + 1}: ${preview.substring(0, 50)}...`);
+        }
+      });
+    }
+    
+    // 4. Fallback to garment level design reference files
+    if (!hasReferenceImages && Array.isArray(garment?.designReferenceFiles) && garment.designReferenceFiles.length > 0) {
+      garment.designReferenceFiles.forEach((file: any, index: number) => {
+        const url = file?.url || file?.secure_url || file;
+        if (url && typeof url === 'string' && !url.startsWith('blob:')) {
+          images.push(`<img src="${url}" alt="Reference ${index + 1}" class="design-image" />`);
+          hasReferenceImages = true;
+          console.log(`[Tailor Invoice] ✅ GARMENT_REF ${index + 1}: ${url.substring(0, 50)}...`);
+        }
+      });
+    }
+    
+    // 5. Last resort: Try to generate Cloudinary URLs based on order structure
+    // Disabled for now - need proper cloud name configuration
+    /*
+    if (!hasReferenceImages && orderIdValue && orderIdValue !== 'N/A') {
+      console.log(`[Tailor Invoice] Attempting to generate Cloudinary URLs for reference images`);
+      // Try a few potential reference image URLs
+      for (let i = 1; i <= 3; i++) {
+        const cloudinaryUrl = generateCloudinaryURL(orderIdValue, garmentIndex, designIndex, 'REF', i);
+        console.log(`[Tailor Invoice] Trying Cloudinary URL ${i}: ${cloudinaryUrl}`);
+        images.push(`<img src="${cloudinaryUrl}" alt="Reference ${i}" class="design-image" onerror="this.style.display='none'" />`);
+        hasReferenceImages = true;
+      }
+    }
+    */
+    
+    // Use canvas image - prioritize Cloudinary URLs from garment.measurement.canvasImageFile
     if (garment?.measurement?.canvasImageFile?.url) {
       images.push(`<img src="${garment.measurement.canvasImageFile.url}" alt="Canvas" class="canvas-image" />`);
       hasCanvasImage = true;
+      console.log(`[Tailor Invoice] ✅ CANVAS_URL: ${garment.measurement.canvasImageFile.url.substring(0, 50)}...`);
     } else if (garment?.measurement?.canvasImageFile?.secure_url) {
       images.push(`<img src="${garment.measurement.canvasImageFile.secure_url}" alt="Canvas" class="canvas-image" />`);
       hasCanvasImage = true;
-    } else if (design?.canvasImagePreview && !design.canvasImagePreview.startsWith('blob:')) {
-      images.push(`<img src="${design.canvasImagePreview}" alt="Canvas" class="canvas-image" />`);
+      console.log(`[Tailor Invoice] ✅ CANVAS_SECURE: ${garment.measurement.canvasImageFile.secure_url.substring(0, 50)}...`);
+    } else if (design?.canvasImage && design.canvasImage.startsWith('data:image/')) {
+      images.push(`<img src="${design.canvasImage}" alt="Canvas" class="canvas-image" style="max-width: 240px; max-height: 160px;" />`);
       hasCanvasImage = true;
-    } else if (design?.canvasImage && !design.canvasImage.startsWith('blob:')) {
-      images.push(`<img src="${design.canvasImage}" alt="Canvas" class="canvas-image" />`);
+      console.log(`[Tailor Invoice] ✅ CANVAS_DATA: ${design.canvasImage.length} chars`);
+    } else if (garment?.measurement?.canvasImage && garment.measurement.canvasImage.startsWith('data:image/')) {
+      images.push(`<img src="${garment.measurement.canvasImage}" alt="Canvas" class="canvas-image" style="max-width: 240px; max-height: 160px;" />`);
       hasCanvasImage = true;
+      console.log(`[Tailor Invoice] ✅ GARMENT_CANVAS_DATA: ${garment.measurement.canvasImage.length} chars`);
     }
+    
+    const result = hasReferenceImages ? 'REF✅' : 'REF❌';
+    const canvas = hasCanvasImage ? 'CANVAS✅' : 'CANVAS❌';
+    console.log(`[Tailor Invoice] RESULT: ${result} ${canvas}`);
     
     // Add placeholders only if specific type of image is missing
     if (!hasReferenceImages) {
@@ -73,35 +140,82 @@ export function getTailorInvoiceHtml(order: any) {
     return images.join("");
   }
 
-  function renderClothImages(design: any, garment: any) {
+  function renderClothImages(design: any, garment: any, garmentIndex: number = 0, designIndex: number = 0) {
     let images: string[] = [];
     let hasClothImages = false;
     
-    // Handle cloth images - prioritize Cloudinary URLs
-    if (design?.clothImageFiles?.length > 0) {
-      design.clothImageFiles.forEach((file: any) => {
-        const url = file?.secure_url || file?.url || file;
-        if (url && !url.startsWith('blob:')) {
-          images.push(`<img src="${url}" alt="Cloth" class="cloth-image" />`);
+    const clothFiles = design?.clothImageFiles?.length || 0;
+    const clothItems = design?.clothImages?.length || 0;
+    const clothPreviews = design?.clothImagePreviews?.length || 0;
+    
+    console.log(`[Tailor Invoice] Cloth: FILES:${clothFiles} ITEMS:${clothItems} PREVIEWS:${clothPreviews}`);
+    
+    // Handle cloth images - check multiple possible locations
+    
+    // 1. First check for clothImageFiles (uploaded Cloudinary files)
+    if (Array.isArray(design?.clothImageFiles) && design.clothImageFiles.length > 0) {
+      design.clothImageFiles.forEach((file: any, index: number) => {
+        const url = file?.url || file?.secure_url || file;
+        if (url && typeof url === 'string' && !url.startsWith('blob:')) {
+          images.push(`<img src="${url}" alt="Cloth ${index + 1}" class="cloth-image" />`);
           hasClothImages = true;
-        }
-      });
-    } else if (garment?.clothImageFiles?.length > 0) {
-      garment.clothImageFiles.forEach((file: any) => {
-        const url = file?.secure_url || file?.url || file;
-        if (url && !url.startsWith('blob:')) {
-          images.push(`<img src="${url}" alt="Cloth" class="cloth-image" />`);
-          hasClothImages = true;
-        }
-      });
-    } else if (design?.clothImagePreviews?.length > 0) {
-      design.clothImagePreviews.forEach((preview: string) => {
-        if (!preview.startsWith('blob:')) {
-          images.push(`<img src="${preview}" alt="Cloth" class="cloth-image" />`);
-          hasClothImages = true;
+          console.log(`[Tailor Invoice] ✅ CLOTH_FILE ${index + 1}: ${url.substring(0, 50)}...`);
         }
       });
     }
+    
+    // 2. Fallback to clothImages array (contains File objects or URLs)  
+    if (!hasClothImages && Array.isArray(design?.clothImages) && design.clothImages.length > 0) {
+      design.clothImages.forEach((file: any, index: number) => {
+        const url = file?.url || file?.secure_url || file;
+        if (url && typeof url === 'string' && !url.startsWith('blob:')) {
+          images.push(`<img src="${url}" alt="Cloth ${index + 1}" class="cloth-image" />`);
+          hasClothImages = true;
+          console.log(`[Tailor Invoice] ✅ CLOTH_ITEM ${index + 1}: ${url.substring(0, 50)}...`);
+        }
+      });
+    }
+    
+    // 3. Last resort: try clothImagePreviews but only non-blob URLs
+    if (!hasClothImages && Array.isArray(design?.clothImagePreviews) && design.clothImagePreviews.length > 0) {
+      design.clothImagePreviews.forEach((preview: string, index: number) => {
+        if (preview && typeof preview === 'string' && !preview.startsWith('blob:')) {
+          images.push(`<img src="${preview}" alt="Cloth ${index + 1}" class="cloth-image" />`);
+          hasClothImages = true;
+          console.log(`[Tailor Invoice] ✅ CLOTH_PREVIEW ${index + 1}: ${preview.substring(0, 50)}...`);
+        }
+      });
+    }
+    
+    // 4. Fallback to garment level cloth images
+    if (!hasClothImages && Array.isArray(garment?.clothImageFiles) && garment.clothImageFiles.length > 0) {
+      garment.clothImageFiles.forEach((file: any, index: number) => {
+        const url = file?.url || file?.secure_url || file;
+        if (url && typeof url === 'string' && !url.startsWith('blob:')) {
+          images.push(`<img src="${url}" alt="Cloth ${index + 1}" class="cloth-image" />`);
+          hasClothImages = true;
+          console.log(`[Tailor Invoice] ✅ GARMENT_CLOTH ${index + 1}: ${url.substring(0, 50)}...`);
+        }
+      });
+    }
+    
+    // 5. Last resort: Try to generate Cloudinary URLs for cloth images  
+    // Disabled for now - need proper cloud name configuration
+    /*
+    if (!hasClothImages && orderIdValue && orderIdValue !== 'N/A') {
+      console.log(`[Tailor Invoice] Attempting to generate Cloudinary URLs for cloth images`);
+      // Try a few potential cloth image URLs
+      for (let i = 1; i <= 3; i++) {
+        const cloudinaryUrl = generateCloudinaryURL(orderIdValue, garmentIndex, designIndex, 'CLOTH', i);
+        console.log(`[Tailor Invoice] Trying Cloudinary URL ${i}: ${cloudinaryUrl}`);
+        images.push(`<img src="${cloudinaryUrl}" alt="Cloth ${i}" class="cloth-image" onerror="this.style.display='none'" />`);
+        hasClothImages = true;
+      }
+    }
+    */
+    
+    const clothResult = hasClothImages ? 'CLOTH✅' : 'CLOTH❌';
+    console.log(`[Tailor Invoice] CLOTH_RESULT: ${clothResult}`);
     
     // Add placeholder only if no cloth images found
     if (!hasClothImages) {
@@ -112,9 +226,30 @@ export function getTailorInvoiceHtml(order: any) {
   }
 
   function formatDisplayDate(dateStr: string | undefined) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '';
+    if (!dateStr) return 'No date';
+    
+    // Try to parse the date
+    let d: Date;
+    
+    // Handle different date formats
+    if (dateStr.includes('/')) {
+      // Handle DD/MM/YYYY format
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      } else {
+        d = new Date(dateStr);
+      }
+    } else {
+      d = new Date(dateStr);
+    }
+    
+    // If date is still invalid, return error message
+    if (isNaN(d.getTime())) {
+      console.warn(`[Tailor Invoice] Invalid date: ${dateStr}`);
+      return 'Invalid date';
+    }
+    
     return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
   }
 
@@ -482,10 +617,10 @@ export function getTailorInvoiceHtml(order: any) {
                       ${design.fabric ? `<div class="design-fabric">Fabric: ${design.fabric}</div>` : ''}
                       ${design.color ? `<div class="design-color">Color: ${design.color}</div>` : ''}
                       <div class="design-images">
-                        ${renderDesignImages(design, garment)}
+                        ${renderDesignImages(design, garment, gIdx, idx)}
                       </div>
                       <div class="cloth-images">
-                        ${renderClothImages(design, garment)}
+                        ${renderClothImages(design, garment, gIdx, idx)}
                       </div>
                     </div>
                   `).join("")
@@ -493,7 +628,10 @@ export function getTailorInvoiceHtml(order: any) {
                       <div class="design-header">Standard Design</div>
                       <div class="design-description">Custom design with standard specifications</div>
                       <div class="design-images">
-                        ${renderDesignImages({}, garment)}
+                        ${renderDesignImages({}, garment, gIdx, 0)}
+                      </div>
+                      <div class="cloth-images">
+                        ${renderClothImages({}, garment, gIdx, 0)}
                       </div>
                     </div>`
                 }

@@ -260,41 +260,53 @@ export const OrderFormProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         // Append design reference files and canvas images
         if (garment.designs && Array.isArray(garment.designs)) {
           garment.designs.forEach((design: any, designIndex: number) => {
-            console.log(`[OrderFormContext] Processing design ${designIndex} for garment ${garmentIndex}:`, design);
+            console.log(`[OrderFormContext] Processing design ${designIndex} for garment ${garmentIndex}`);
             
             // Append design reference files
             if (design.designReference && Array.isArray(design.designReference)) {
+              let validFiles = 0;
               design.designReference.forEach((file: any, fileIndex: number) => {
                 if (file instanceof File) {
-                  console.log(`[OrderFormContext] Appending File object: designReference_${garmentIndex}_${designIndex}_${fileIndex}`);
                   formData.append(`designReference_${garmentIndex}_${designIndex}_${fileIndex}`, file);
+                  validFiles++;
+                  console.log(`[OrderFormContext] ✅ REF_FILE ${validFiles}: ${file.name} (${file.size}b)`);
                 } else if (typeof file === 'string' && file.startsWith('data:image/')) {
-                  console.log(`[OrderFormContext] Converting data URL to blob: designReference_${garmentIndex}_${designIndex}_${fileIndex}`);
                   const blob = dataURLtoBlob(file);
                   formData.append(`designReference_${garmentIndex}_${designIndex}_${fileIndex}`, blob, `design_${garmentIndex}_${designIndex}_${fileIndex}.png`);
+                  validFiles++;
+                  console.log(`[OrderFormContext] ✅ REF_DATA ${validFiles}: ${file.length} chars`);
+                } else {
+                  console.warn(`[OrderFormContext] ❌ INVALID REF: ${typeof file}`);
                 }
               });
+              console.log(`[OrderFormContext] REF TOTAL: ${validFiles}/${design.designReference.length}`);
             }
             
             // Append cloth images
             if (design.clothImages && Array.isArray(design.clothImages)) {
+              let validCloth = 0;
               design.clothImages.forEach((file: any, fileIndex: number) => {
                 if (file instanceof File) {
-                  console.log(`[OrderFormContext] Appending File object: clothImage_${garmentIndex}_${designIndex}_${fileIndex}`);
                   formData.append(`clothImage_${garmentIndex}_${designIndex}_${fileIndex}`, file);
+                  validCloth++;
+                  console.log(`[OrderFormContext] ✅ CLOTH_FILE ${validCloth}: ${file.name} (${file.size}b)`);
                 } else if (typeof file === 'string' && file.startsWith('data:image/')) {
-                  console.log(`[OrderFormContext] Converting data URL to blob: clothImage_${garmentIndex}_${designIndex}_${fileIndex}`);
                   const blob = dataURLtoBlob(file);
                   formData.append(`clothImage_${garmentIndex}_${designIndex}_${fileIndex}`, blob, `cloth_${garmentIndex}_${designIndex}_${fileIndex}.png`);
+                  validCloth++;
+                  console.log(`[OrderFormContext] ✅ CLOTH_DATA ${validCloth}: ${file.length} chars`);
+                } else {
+                  console.warn(`[OrderFormContext] ❌ INVALID CLOTH: ${typeof file}`);
                 }
               });
+              console.log(`[OrderFormContext] CLOTH TOTAL: ${validCloth}/${design.clothImages.length}`);
             }
             
             // Append canvas image from design if exists
             if (design.canvasImage && design.canvasImage.startsWith('data:image/')) {
-              console.log(`[OrderFormContext] Found canvas image in design ${designIndex} for garment ${garmentIndex}`);
               const canvasBlob = dataURLtoBlob(design.canvasImage);
               formData.append(`canvasImage_${garmentIndex}`, canvasBlob, `design_canvas_${garmentIndex}_${designIndex}.png`);
+              console.log(`[OrderFormContext] ✅ CANVAS: ${design.canvasImage.length} chars`);
             }
           });
         }

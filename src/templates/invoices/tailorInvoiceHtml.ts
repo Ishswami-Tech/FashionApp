@@ -17,7 +17,7 @@ export function getTailorInvoiceHtml(order: any) {
   console.log(`[Tailor Invoice] Processing order ${orderIdValue} with ${garmentsData.length} garments`);
 
   // Helper function to generate potential Cloudinary URLs based on order structure
-  function generateCloudinaryURL(orderOid: string, garmentIndex: number, designIndex: number, imageType: 'REF' | 'CLOTH', imageNum: number): string {
+  function generateCloudinaryURL(orderOid: string, garmentIndex: number, designIndex: number, imageType: 'REF' | 'CLOTH' | 'CANVAS', imageNum: number): string {
     // Based on API upload logic: ORD+${garmentType}+${orderSeq}+${garmentIndex}+${imageType}+${designIndex}+${imageNum}
     const orderSeq = orderOid.slice(-3); // Last 3 digits
     const dateFolder = orderOid.slice(0, 8); // First 8 digits (YYYYMMDD)
@@ -27,7 +27,7 @@ export function getTailorInvoiceHtml(order: any) {
     const garmentType = 'GARMENT';
     const businessName = `ORD_${garmentType}_${orderSeq}_${garmentIndex + 1}_${imageType}_${designIndex + 1}_${imageNum}`;
     
-    return `https://res.cloudinary.com/your-cloud-name/image/upload/orders/${formattedDate}/${orderOid}/${businessName}.png`;
+    return `https://res.cloudinary.com/ddzfqwryu/image/upload/orders/${formattedDate}/${orderOid}/${businessName}.png`;
   }
 
   function renderDesignImages(design: any, garment: any, garmentIndex: number = 0, designIndex: number = 0) {
@@ -41,6 +41,8 @@ export function getTailorInvoiceHtml(order: any) {
     const hasCanvas = !!(design?.canvasImage || garment?.measurement?.canvasImageFile?.url);
     
     console.log(`[Tailor Invoice] Images: REF_FILES:${refFiles} REF_ITEMS:${refItems} REF_PREVIEWS:${refPreviews} CANVAS:${hasCanvas}`);
+    console.log(`[Tailor Invoice] Design object keys:`, Object.keys(design || {}));
+    console.log(`[Tailor Invoice] designReferenceFiles:`, design?.designReferenceFiles);
     
     // Handle design reference images - check multiple possible locations
     
@@ -48,7 +50,7 @@ export function getTailorInvoiceHtml(order: any) {
     if (Array.isArray(design?.designReferenceFiles) && design.designReferenceFiles.length > 0) {
       design.designReferenceFiles.forEach((file: any, index: number) => {
         const url = file?.url || file?.secure_url || file;
-        if (url && typeof url === 'string' && !url.startsWith('blob:')) {
+        if (url && typeof url === 'string' && !url.startsWith('blob:') && !url.startsWith('data:')) {
           images.push(`<img src="${url}" alt="Reference ${index + 1}" class="design-image" />`);
           hasReferenceImages = true;
           console.log(`[Tailor Invoice] ✅ REF_FILE ${index + 1}: ${url.substring(0, 50)}...`);
@@ -60,7 +62,7 @@ export function getTailorInvoiceHtml(order: any) {
     if (!hasReferenceImages && Array.isArray(design?.designReference) && design.designReference.length > 0) {
       design.designReference.forEach((file: any, index: number) => {
         const url = file?.url || file?.secure_url || file;
-        if (url && typeof url === 'string' && !url.startsWith('blob:')) {
+        if (url && typeof url === 'string' && !url.startsWith('blob:') && !url.startsWith('data:')) {
           images.push(`<img src="${url}" alt="Reference ${index + 1}" class="design-image" />`);
           hasReferenceImages = true;
           console.log(`[Tailor Invoice] ✅ REF_ITEM ${index + 1}: ${url.substring(0, 50)}...`);
@@ -71,7 +73,7 @@ export function getTailorInvoiceHtml(order: any) {
     // 3. Last resort: try designReferencePreviews but only non-blob URLs
     if (!hasReferenceImages && Array.isArray(design?.designReferencePreviews) && design.designReferencePreviews.length > 0) {
       design.designReferencePreviews.forEach((preview: string, index: number) => {
-        if (preview && typeof preview === 'string' && !preview.startsWith('blob:')) {
+        if (preview && typeof preview === 'string' && !preview.startsWith('blob:') && !preview.startsWith('data:')) {
           images.push(`<img src="${preview}" alt="Reference ${index + 1}" class="design-image" />`);
           hasReferenceImages = true;
           console.log(`[Tailor Invoice] ✅ REF_PREVIEW ${index + 1}: ${preview.substring(0, 50)}...`);
@@ -83,7 +85,7 @@ export function getTailorInvoiceHtml(order: any) {
     if (!hasReferenceImages && Array.isArray(garment?.designReferenceFiles) && garment.designReferenceFiles.length > 0) {
       garment.designReferenceFiles.forEach((file: any, index: number) => {
         const url = file?.url || file?.secure_url || file;
-        if (url && typeof url === 'string' && !url.startsWith('blob:')) {
+        if (url && typeof url === 'string' && !url.startsWith('blob:') && !url.startsWith('data:')) {
           images.push(`<img src="${url}" alt="Reference ${index + 1}" class="design-image" />`);
           hasReferenceImages = true;
           console.log(`[Tailor Invoice] ✅ GARMENT_REF ${index + 1}: ${url.substring(0, 50)}...`);
@@ -91,53 +93,92 @@ export function getTailorInvoiceHtml(order: any) {
       });
     }
     
-    // 5. Last resort: Try to generate Cloudinary URLs based on order structure
-    // Disabled for now - need proper cloud name configuration
-    /*
-    if (!hasReferenceImages && orderIdValue && orderIdValue !== 'N/A') {
-      console.log(`[Tailor Invoice] Attempting to generate Cloudinary URLs for reference images`);
-      // Try a few potential reference image URLs
-      for (let i = 1; i <= 3; i++) {
-        const cloudinaryUrl = generateCloudinaryURL(orderIdValue, garmentIndex, designIndex, 'REF', i);
-        console.log(`[Tailor Invoice] Trying Cloudinary URL ${i}: ${cloudinaryUrl}`);
-        images.push(`<img src="${cloudinaryUrl}" alt="Reference ${i}" class="design-image" onerror="this.style.display='none'" />`);
-        hasReferenceImages = true;
-      }
-    }
-    */
+         // 5. Last resort: Try to generate Cloudinary URLs based on order structure
+     if (!hasReferenceImages && orderIdValue && orderIdValue !== 'N/A') {
+       console.log(`[Tailor Invoice] Attempting to generate Cloudinary URLs for reference images`);
+       // Try 2 potential reference image URLs
+       for (let i = 1; i <= 2; i++) {
+         const cloudinaryUrl = generateCloudinaryURL(orderIdValue, garmentIndex, designIndex, 'REF', i);
+         console.log(`[Tailor Invoice] Trying Cloudinary URL ${i}: ${cloudinaryUrl}`);
+         images.push(`<img src="${cloudinaryUrl}" alt="Reference ${i}" class="design-image" onerror="this.style.display='none'" />`);
+         hasReferenceImages = true;
+       }
+     }
+     
+         // Filter out any canvas images that might have been included in reference images
+    images = images.filter(img => !img.includes('canvas') && !img.includes('Canvas') && !img.includes('CANVAS'));
     
-    // Use canvas image - prioritize Cloudinary URLs from garment.measurement.canvasImageFile
-    if (garment?.measurement?.canvasImageFile?.url) {
-      images.push(`<img src="${garment.measurement.canvasImageFile.url}" alt="Canvas" class="canvas-image" />`);
-      hasCanvasImage = true;
-      console.log(`[Tailor Invoice] ✅ CANVAS_URL: ${garment.measurement.canvasImageFile.url.substring(0, 50)}...`);
-    } else if (garment?.measurement?.canvasImageFile?.secure_url) {
-      images.push(`<img src="${garment.measurement.canvasImageFile.secure_url}" alt="Canvas" class="canvas-image" />`);
-      hasCanvasImage = true;
-      console.log(`[Tailor Invoice] ✅ CANVAS_SECURE: ${garment.measurement.canvasImageFile.secure_url.substring(0, 50)}...`);
-    } else if (design?.canvasImage && design.canvasImage.startsWith('data:image/')) {
-      images.push(`<img src="${design.canvasImage}" alt="Canvas" class="canvas-image" style="max-width: 240px; max-height: 160px;" />`);
-      hasCanvasImage = true;
-      console.log(`[Tailor Invoice] ✅ CANVAS_DATA: ${design.canvasImage.length} chars`);
-    } else if (garment?.measurement?.canvasImage && garment.measurement.canvasImage.startsWith('data:image/')) {
-      images.push(`<img src="${garment.measurement.canvasImage}" alt="Canvas" class="canvas-image" style="max-width: 240px; max-height: 160px;" />`);
-      hasCanvasImage = true;
-      console.log(`[Tailor Invoice] ✅ GARMENT_CANVAS_DATA: ${garment.measurement.canvasImage.length} chars`);
-    }
+    // REMOVED: Canvas image rendering from reference images function
+    // Canvas images should only be rendered in the dedicated canvas section
+    
+    // Ensure we only have unique images (no duplicates)
+    const uniqueImages = images.filter((img, index, self) => 
+      self.findIndex(i => i === img) === index
+    );
     
     const result = hasReferenceImages ? 'REF✅' : 'REF❌';
-    const canvas = hasCanvasImage ? 'CANVAS✅' : 'CANVAS❌';
-    console.log(`[Tailor Invoice] RESULT: ${result} ${canvas}`);
+    console.log(`[Tailor Invoice] RESULT: ${result}`);
     
-    // Add placeholders only if specific type of image is missing
+    // Add placeholder only if reference images are missing
     if (!hasReferenceImages) {
-      images.push('<div class="image-placeholder">No Reference Images</div>');
-    }
-    if (!hasCanvasImage) {
-      images.push('<div class="image-placeholder canvas">No Canvas</div>');
+      uniqueImages.push('<div class="image-placeholder">No Reference Images</div>');
     }
     
-    return images.join("");
+    return uniqueImages.join("");
+  }
+
+  function renderCanvasImage(design: any, garment: any, garmentIndex: number = 0, designIndex: number = 0) {
+    let canvasImage = '';
+    let hasCanvasImage = false;
+    
+    // Check for canvas image in design
+    if (design?.canvasImage && design.canvasImage.startsWith('data:image/')) {
+      canvasImage = `<img src="${design.canvasImage}" alt="Canvas Design" class="canvas-image" />`;
+      hasCanvasImage = true;
+      console.log(`[Tailor Invoice] ✅ CANVAS from design: ${design.canvasImage.length} chars`);
+    }
+    
+    // Check for canvas image in garment measurements
+    if (!hasCanvasImage && garment?.measurements?.canvasImage && garment.measurements.canvasImage.startsWith('data:image/')) {
+      canvasImage = `<img src="${garment.measurements.canvasImage}" alt="Canvas Design" class="canvas-image" />`;
+      hasCanvasImage = true;
+      console.log(`[Tailor Invoice] ✅ CANVAS from measurements: ${garment.measurements.canvasImage.length} chars`);
+    }
+    
+    // Check for canvas image file URL
+    if (!hasCanvasImage && garment?.measurement?.canvasImageFile?.url) {
+      const url = garment.measurement.canvasImageFile.url;
+      if (url && typeof url === 'string' && !url.startsWith('blob:') && !url.startsWith('data:')) {
+        canvasImage = `<img src="${url}" alt="Canvas Design" class="canvas-image" />`;
+        hasCanvasImage = true;
+        console.log(`[Tailor Invoice] ✅ CANVAS_URL: ${url.substring(0, 50)}...`);
+      }
+    }
+    
+    // Try to generate Cloudinary URL for canvas
+    if (!hasCanvasImage && orderIdValue && orderIdValue !== 'N/A') {
+      const cloudinaryUrl = generateCloudinaryURL(orderIdValue, garmentIndex, designIndex, 'CANVAS', 1);
+      canvasImage = `<img src="${cloudinaryUrl}" alt="Canvas Design" class="canvas-image" onerror="this.style.display='none'" />`;
+      hasCanvasImage = true;
+      console.log(`[Tailor Invoice] ✅ CANVAS_URL: ${cloudinaryUrl.substring(0, 50)}...`);
+    }
+    
+    // Ensure only one canvas image is rendered
+    if (hasCanvasImage && canvasImage.includes('onerror')) {
+      // If we're using a fallback URL, make sure it's the only one
+      canvasImage = canvasImage.replace(/<img[^>]*>/g, (match) => {
+        if (match.includes('CANVAS')) {
+          return match;
+        }
+        return '';
+      });
+    }
+    
+    if (!hasCanvasImage) {
+      canvasImage = '<div class="image-placeholder canvas">No Canvas Image</div>';
+    }
+    
+    return canvasImage;
   }
 
   function renderClothImages(design: any, garment: any, garmentIndex: number = 0, designIndex: number = 0) {
@@ -149,6 +190,7 @@ export function getTailorInvoiceHtml(order: any) {
     const clothPreviews = design?.clothImagePreviews?.length || 0;
     
     console.log(`[Tailor Invoice] Cloth: FILES:${clothFiles} ITEMS:${clothItems} PREVIEWS:${clothPreviews}`);
+    console.log(`[Tailor Invoice] clothImageFiles:`, design?.clothImageFiles);
     
     // Handle cloth images - check multiple possible locations
     
@@ -168,7 +210,7 @@ export function getTailorInvoiceHtml(order: any) {
     if (!hasClothImages && Array.isArray(design?.clothImages) && design.clothImages.length > 0) {
       design.clothImages.forEach((file: any, index: number) => {
         const url = file?.url || file?.secure_url || file;
-        if (url && typeof url === 'string' && !url.startsWith('blob:')) {
+        if (url && typeof url === 'string' && !url.startsWith('blob:') && !url.startsWith('data:')) {
           images.push(`<img src="${url}" alt="Cloth ${index + 1}" class="cloth-image" />`);
           hasClothImages = true;
           console.log(`[Tailor Invoice] ✅ CLOTH_ITEM ${index + 1}: ${url.substring(0, 50)}...`);
@@ -199,30 +241,32 @@ export function getTailorInvoiceHtml(order: any) {
       });
     }
     
-    // 5. Last resort: Try to generate Cloudinary URLs for cloth images  
-    // Disabled for now - need proper cloud name configuration
-    /*
-    if (!hasClothImages && orderIdValue && orderIdValue !== 'N/A') {
-      console.log(`[Tailor Invoice] Attempting to generate Cloudinary URLs for cloth images`);
-      // Try a few potential cloth image URLs
-      for (let i = 1; i <= 3; i++) {
-        const cloudinaryUrl = generateCloudinaryURL(orderIdValue, garmentIndex, designIndex, 'CLOTH', i);
-        console.log(`[Tailor Invoice] Trying Cloudinary URL ${i}: ${cloudinaryUrl}`);
-        images.push(`<img src="${cloudinaryUrl}" alt="Cloth ${i}" class="cloth-image" onerror="this.style.display='none'" />`);
-        hasClothImages = true;
-      }
-    }
-    */
+         // 5. Last resort: Try to generate Cloudinary URLs for cloth images  
+     if (!hasClothImages && orderIdValue && orderIdValue !== 'N/A') {
+       console.log(`[Tailor Invoice] Attempting to generate Cloudinary URLs for cloth images`);
+       // Try 2 potential cloth image URLs
+       for (let i = 1; i <= 2; i++) {
+         const cloudinaryUrl = generateCloudinaryURL(orderIdValue, garmentIndex, designIndex, 'CLOTH', i);
+         console.log(`[Tailor Invoice] Trying Cloudinary URL ${i}: ${cloudinaryUrl}`);
+         images.push(`<img src="${cloudinaryUrl}" alt="Cloth ${i}" class="cloth-image" onerror="this.style.display='none'" />`);
+         hasClothImages = true;
+       }
+     }
     
     const clothResult = hasClothImages ? 'CLOTH✅' : 'CLOTH❌';
     console.log(`[Tailor Invoice] CLOTH_RESULT: ${clothResult}`);
     
+    // Ensure we only have unique images (no duplicates)
+    const uniqueImages = images.filter((img, index, self) => 
+      self.findIndex(i => i === img) === index
+    );
+    
     // Add placeholder only if no cloth images found
     if (!hasClothImages) {
-      images.push('<div class="image-placeholder cloth">No Cloth Images</div>');
+      uniqueImages.push('<div class="image-placeholder cloth">No Cloth Images</div>');
     }
     
-    return images.join("");
+    return uniqueImages.join("");
   }
 
   function formatDisplayDate(dateStr: string | undefined) {
@@ -269,64 +313,70 @@ export function getTailorInvoiceHtml(order: any) {
     
     .main-container {
       border: 2px solid #2563eb;
-      padding: 10px;
+      padding: 8px;
     }
     
     .header-section {
-      background: #2563eb;
+      background: #000000;
       color: white;
-      padding: 10px;
+      padding: 8px;
       text-align: center;
-      border: 2px solid #1d4ed8;
-      margin-bottom: 10px;
+      border: 2px solid #000000;
+      margin-bottom: 8px;
     }
     
     .order-id {
-      font-size: 20px;
-      font-weight: bold;
-      margin-bottom: 4px;
-      color: white;
+      font-size: 28px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      color: #000000 !important;
+      background: #ffffff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      display: inline-block;
+      border: 3px solid #000000;
     }
     
     .delivery-instructions {
-      background: #1d4ed8;
-      padding: 6px;
-      border: 1px solid #1e40af;
-      margin-top: 6px;
+      background: #000000;
+      padding: 4px;
+      border: 1px solid #000000;
+      margin-top: 4px;
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 4px;
-      font-size: 11px;
+      gap: 3px;
+      font-size: 10px;
     }
     
     .delivery-instructions div {
       margin: 0;
-      padding: 2px;
+      padding: 1px;
     }
     
     .garments-container {
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 12px;
     }
 
     .garment-section {
       border: 2px solid #2563eb;
       background: white;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      margin-bottom: 12px;
     }
 
     .garment-header {
       background: #2563eb;
       color: white;
-      padding: 12px;
+      padding: 8px;
       border-bottom: 2px solid #1d4ed8;
     }
 
     .garment-title {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: bold;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
     .garment-variant {
@@ -337,29 +387,29 @@ export function getTailorInvoiceHtml(order: any) {
     .garment-content {
       display: grid;
       grid-template-columns: 30% 70%;
-      gap: 8px;
-      padding: 8px;
+      gap: 6px;
+      padding: 6px;
     }
 
     .measurements-column {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      padding: 8px;
+      padding: 6px;
       border-radius: 4px;
     }
 
     .designs-column {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      padding: 8px;
+      padding: 6px;
       border-radius: 4px;
     }
 
     .measurements-title, .designs-title {
-      font-size: 14px;
+      font-size: 12px;
       font-weight: bold;
       color: #2563eb;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       text-align: center;
       border-bottom: 1px solid #2563eb;
       padding-bottom: 2px;
@@ -415,9 +465,9 @@ export function getTailorInvoiceHtml(order: any) {
     }
     
     .design-section {
-      margin-bottom: 16px;
+      margin-bottom: 8px;
       border: 1px solid #e2e8f0;
-      padding: 16px;
+      padding: 8px;
       background: white;
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
       border-radius: 4px;
@@ -428,11 +478,11 @@ export function getTailorInvoiceHtml(order: any) {
     }
     
     .design-header {
-      font-size: 16px;
+      font-size: 12px;
       font-weight: bold;
       color: #1d4ed8;
-      margin-bottom: 8px;
-      padding: 8px 12px;
+      margin-bottom: 4px;
+      padding: 4px 8px;
       background: #e0e7ff;
       border-radius: 4px;
       border: 1px solid #c7d2fe;
@@ -455,86 +505,141 @@ export function getTailorInvoiceHtml(order: any) {
       color: #059669;
     }
     
-    .design-images {
-      margin-top: 12px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding: 8px;
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 4px;
-    }
-    
-    .cloth-images {
-      margin-top: 12px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding: 8px;
-      background: #ffffff;
-      border: 1px solid #e5e7eb;
-      border-radius: 4px;
-    }
-    
-
-    
-    .image-placeholder {
-      width: 120px;
-      height: 80px;
+    .all-images-container {
+      margin-top: 6px;
+      padding: 6px;
+      background: #f8fafc;
       border: 2px solid #2563eb;
-      text-align: center;
-      padding: 8px;
-      margin: 2px;
-      color: #64748b;
-      font-size: 9px;
-      font-weight: bold;
-      display: inline-block;
+      border-radius: 6px;
     }
     
-    .design-image, .cloth-image {
-      width: 100px;
-      height: 70px;
-      object-fit: cover;
-      border: 1px solid #2563eb;
-      margin: 1px;
-      display: inline-block;
+    .images-section-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #2563eb;
+      margin-bottom: 6px;
+      text-align: center;
+      border-bottom: 1px solid #2563eb;
+      padding-bottom: 2px;
+    }
+    
+    .images-grid {
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    
+    .canvas-section {
+      text-align: center;
+      width: 40%;
+      min-width: 200px;
+    }
+    
+    .canvas-section-title {
+      font-size: 11px;
+      font-weight: bold;
+      color: #dc2626;
+      margin-bottom: 4px;
+      background: #fef2f2;
+      padding: 3px 6px;
+      border-radius: 4px;
+      border: 1px solid #fecaca;
+    }
+    
+    .other-images-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 60%;
+      flex: 1;
+    }
+    
+    .reference-section, .cloth-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+    }
+    
+    .section-title {
+      font-size: 11px;
+      font-weight: bold;
+      color: #374151;
+      margin-bottom: 6px;
+      text-align: center;
+      background: #f1f5f9;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .design-images, .cloth-images {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      min-height: 100px;
+      padding: 8px;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
     }
     
     .canvas-image {
-      width: 240px;
-      height: 160px;
+      width: 200px;
+      height: 200px;
       object-fit: cover;
       border: 2px solid #dc2626;
+      border-radius: 6px;
       margin: 1px;
       display: inline-block;
+      box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+    }
+    
+    .image-placeholder.canvas {
+      width: 200px;
+      height: 200px;
+      border: 2px solid #dc2626;
+      border-radius: 6px;
+      background: #fef2f2;
+    }
+    
+    .design-image, .cloth-image {
+      width: 120px;
+      height: 90px;
+      object-fit: cover;
+      border: 2px solid #2563eb;
+      margin: 1px;
+      display: inline-block;
+      border-radius: 4px;
+      box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
     }
     
     .cloth-image {
       border-color: #059669;
+      box-shadow: 0 1px 2px rgba(5, 150, 105, 0.2);
     }
     
     .image-placeholder {
-      width: 100px;
-      height: 70px;
-      border: 1px solid #2563eb;
+      width: 120px;
+      height: 90px;
+      border: 2px solid #2563eb;
       text-align: center;
-      padding: 4px;
+      padding: 6px;
       margin: 1px;
       color: #64748b;
-      font-size: 9px;
+      font-size: 8px;
       font-weight: bold;
       display: inline-block;
-    }
-    
-    .image-placeholder.canvas {
-      width: 240px;
-      height: 160px;
-      border: 2px solid #dc2626;
+      border-radius: 4px;
+      background: #f8fafc;
     }
     
     .image-placeholder.cloth {
       border-color: #059669;
+      background: #f0fdf4;
     }
     
     .no-images {
@@ -573,6 +678,9 @@ export function getTailorInvoiceHtml(order: any) {
                   measurements = garment.measurement;
                 }
                 
+                console.log(`[Tailor Invoice] Garment ${gIdx} measurements object:`, measurements);
+                console.log(`[Tailor Invoice] Garment ${gIdx} keys:`, Object.keys(garment || {}));
+                
                 const validMeasurements = Object.entries(measurements)
                   .filter(([key, value]) => {
                     if (!value || value === '') return false;
@@ -587,10 +695,9 @@ export function getTailorInvoiceHtml(order: any) {
 
         return `
           <div class="garment-section">
-            <div class="garment-header">
-              <div class="garment-title">Garment ${gIdx + 1}: ${garment.orderType || garment.order?.orderType || "Custom Garment"}</div>
-              ${garment.variant ? `<div class="garment-variant">Variant: ${garment.variant}</div>` : ''}
-            </div>
+                         <div class="garment-header">
+               <div class="garment-title">Garment ${gIdx + 1}: ${garment.orderType || garment.order?.orderType || "Custom Garment"}${garment.variant ? ` - ${garment.variant}` : ''}</div>
+             </div>
             
             <div class="garment-content">
               <!-- Measurements Column -->
@@ -609,29 +716,60 @@ export function getTailorInvoiceHtml(order: any) {
                 <div class="designs-title">🎨 Design Details</div>
               ${Array.isArray(garment.designs) && garment.designs.length > 0
                 ? garment.designs.map((design: any, idx: number) => `
-                    <div class="design-section">
-                      <div class="design-header">Design ${idx + 1}: ${design.name || `Design ${idx + 1}`}</div>
-                      <div class="design-description">${design.designDescription || "Custom design"}</div>
-                      ${design.amount ? `<div class="design-amount">Amount: ₹${design.amount}</div>` : ''}
-                      ${design.quantity ? `<div class="design-quantity">Quantity: ${design.quantity}</div>` : ''}
-                      ${design.fabric ? `<div class="design-fabric">Fabric: ${design.fabric}</div>` : ''}
-                      ${design.color ? `<div class="design-color">Color: ${design.color}</div>` : ''}
-                      <div class="design-images">
-                        ${renderDesignImages(design, garment, gIdx, idx)}
-                      </div>
-                      <div class="cloth-images">
-                        ${renderClothImages(design, garment, gIdx, idx)}
+                                         <div class="design-section">
+                       <div class="design-header">Design ${idx + 1}: ${design.name || `Design ${idx + 1}`} - ${design.designDescription || "Custom design"}</div>
+                       ${design.quantity ? `<div class="design-quantity">Quantity: ${design.quantity}</div>` : ''}
+                       ${design.fabric ? `<div class="design-fabric">Fabric: ${design.fabric}</div>` : ''}
+                       ${design.color ? `<div class="design-color">Color: ${design.color}</div>` : ''}
+                      
+                      <div class="all-images-container">
+                        <div class="images-grid">
+                          <div class="canvas-section">
+                            <div class="canvas-section-title">🎨 Canvas Design</div>
+                            ${renderCanvasImage(design, garment, gIdx, idx)}
+                          </div>
+                          <div class="other-images-section">
+                            <div class="reference-section">
+                              <div class="section-title">🎨 Reference Images</div>
+                              <div class="design-images">
+                                ${renderDesignImages(design, garment, gIdx, idx)}
+                              </div>
+                            </div>
+                            <div class="cloth-section">
+                              <div class="section-title">🧵 Cloth/Fabric Images</div>
+                              <div class="cloth-images">
+                                ${renderClothImages(design, garment, gIdx, idx)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   `).join("")
-                  : `<div class="design-section">
-                      <div class="design-header">Standard Design</div>
-                      <div class="design-description">Custom design with standard specifications</div>
-                      <div class="design-images">
-                        ${renderDesignImages({}, garment, gIdx, 0)}
-                      </div>
-                      <div class="cloth-images">
-                        ${renderClothImages({}, garment, gIdx, 0)}
+                                     : `<div class="design-section">
+                       <div class="design-header">Standard Design - Custom design with standard specifications</div>
+                      
+                      <div class="all-images-container">
+                        <div class="images-grid">
+                          <div class="canvas-section">
+                            <div class="canvas-section-title">🎨 Canvas Design</div>
+                            ${renderCanvasImage({}, garment, gIdx, 0)}
+                          </div>
+                          <div class="other-images-section">
+                            <div class="reference-section">
+                              <div class="section-title">🎨 Reference Images</div>
+                              <div class="design-images">
+                                ${renderDesignImages({}, garment, gIdx, 0)}
+                              </div>
+                            </div>
+                            <div class="cloth-section">
+                              <div class="section-title">🧵 Cloth/Fabric Images</div>
+                              <div class="cloth-images">
+                                ${renderClothImages({}, garment, gIdx, 0)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>`
                 }
@@ -670,31 +808,31 @@ export function getTailorInvoiceHtml(order: any) {
   </div>
 
   <style>
-    .footer-summary {
-      margin-top: 24px;
-      border-top: 2px solid #2563eb;
-      padding: 16px;
-      background: #f8fafc;
-    }
+         .footer-summary {
+       margin-top: 12px;
+       border-top: 2px solid #2563eb;
+       padding: 8px;
+       background: #f8fafc;
+     }
 
-    .footer-title {
-      font-size: 16px;
-      font-weight: bold;
-      color: #2563eb;
-      margin-bottom: 12px;
-      text-align: center;
-      border: 2px dashed #2563eb;
-      padding: 8px;
-      margin: 0 auto 16px;
-      max-width: 200px;
-      border-radius: 4px;
-    }
+         .footer-title {
+       font-size: 14px;
+       font-weight: bold;
+       color: #2563eb;
+       margin-bottom: 8px;
+       text-align: center;
+       border: 2px dashed #2563eb;
+       padding: 6px;
+       margin: 0 auto 8px;
+       max-width: 180px;
+       border-radius: 4px;
+     }
 
-    .garments-summary {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
+         .garments-summary {
+       display: flex;
+       flex-direction: column;
+       gap: 12px;
+     }
 
     .garment-summary {
       width: 250px;

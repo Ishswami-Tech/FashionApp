@@ -31,7 +31,7 @@ export const DeliveryPaymentForm: React.FC<DeliveryPaymentFormProps> = ({
     const formData = deliveryForm.getValues();
     
     // Convert the date to DD/MM/YYYY format to match API expectations
-    if (formData.deliveryDate instanceof Date) {
+    if (formData.deliveryDate instanceof Date && !isNaN(formData.deliveryDate.getTime())) {
       formData.deliveryDate = format(formData.deliveryDate, 'dd/MM/yyyy');
     }
 
@@ -126,7 +126,9 @@ export const DeliveryPaymentForm: React.FC<DeliveryPaymentFormProps> = ({
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "PPP")
+                              field.value instanceof Date && !isNaN(field.value.getTime()) 
+                                ? format(field.value, "PPP")
+                                : <span>Pick a date</span>
                             ) : (
                               <span>Pick a date</span>
                             )}

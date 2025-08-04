@@ -347,96 +347,109 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                     {/* Design Reference Images */}
                     <div>
-                    <label className="block font-medium mb-1 text-sm text-gray-700">
-                      Design Reference Images (max 5)
-                    </label>
-                    <div className="relative">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) => {
-                          const files = Array.from(e.target.files || []);
-                          setDesigns((prev) => {
-                            const arr = [...prev];
-                            arr[idx].designReference = files.slice(0, 5);
-                            arr[idx].designReferencePreviews = files
-                              .slice(0, 5)
-                              .map((file) =>
-                                typeof file === "string"
-                                  ? file
-                                  : URL.createObjectURL(file)
+                      <label className="block font-medium mb-1 text-sm text-gray-700">
+                        Design Reference Images (max 2)
+                      </label>
+                      <div className="relative">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          capture="environment"
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            console.log(
+                              `[OrderDetailsForm] Design reference files selected:`,
+                              files
+                            );
+                            setDesigns((prev) => {
+                              const arr = [...prev];
+                              arr[idx].designReference = files.slice(0, 2);
+                              arr[idx].designReferencePreviews = files
+                                .slice(0, 2)
+                                .map((file) =>
+                                  typeof file === "string"
+                                    ? file
+                                    : URL.createObjectURL(file)
+                                );
+                              console.log(
+                                `[OrderDetailsForm] Updated design ${idx} designReference:`,
+                                arr[idx].designReference
                               );
-                            return arr;
-                          });
-                          e.target.value = ""; // Clear input to allow re-uploading the same file
-                        }}
-                        className="w-full cursor-pointer"
-                        disabled={designs[idx].designReference?.length >= 5}
-                      />
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                              return arr;
+                            });
+                            e.target.value = ""; // Clear input to allow re-uploading the same file
+                          }}
+                          className="w-full cursor-pointer"
+                          disabled={designs[idx].designReference?.length >= 2}
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                           <span className="text-gray-400 text-sm">🎨</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-xs text-gray-500">
-                          Design inspiration & style references
-                      </p>
-                      <span className="text-xs text-blue-600 font-medium">
-                        ({designs[idx].designReference?.length || 0}/5)
-                      </span>
-                    </div>
-                      {/* Design Reference Image Previews */}
-                    {(designs[idx].designReferencePreviews || []).length > 0 ? (
-                      <div className="mt-3">
-                        <p className="text-xs text-gray-600 mb-2 font-medium">
-                            🎨 Design References:
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {(designs[idx].designReferencePreviews || []).map(
-                            (url: string, i: number) => (
-                              <div key={i} className="relative group">
-                                <img
-                                  src={url}
-                                    alt={`Design Reference ${i + 1}`}
-                                    className="w-16 h-16 object-cover border rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                                />
-                                {/* Remove button */}
-                                <button
-                                  type="button"
-                                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold transition-colors"
-                                  onClick={() => {
-                                    setDesigns((prev) => {
-                                      const arr = [...prev];
-                                      arr[idx].designReference = arr[
-                                        idx
-                                      ].designReference.filter(
-                                        (item: any, j: number) => j !== i
-                                      );
-                                      arr[idx].designReferencePreviews = arr[
-                                        idx
-                                      ].designReferencePreviews.filter(
-                                        (item: any, j: number) => j !== i
-                                      );
-                                      return arr;
-                                    });
-                                  }}
-                                    aria-label="Remove design reference"
-                                >
-                                  ×
-                                </button>
-                                {/* Image number badge */}
-                                <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 text-white text-xs px-1 rounded">
-                                  {i + 1}
-                                </div>
-                              </div>
-                            )
-                          )}
                         </div>
                       </div>
-                    ) : (
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-gray-500">
+                          Design inspiration & style references
+                        </p>
+                        <span className="text-xs text-blue-600 font-medium">
+                          ({designs[idx].designReference?.length || 0}/2)
+                        </span>
+                      </div>
+                      <p className="text-xs text-green-600 mt-1">
+                        📱 Tap to open camera on mobile devices
+                      </p>
+                      {/* Design Reference Image Previews */}
+                      {(designs[idx].designReferencePreviews || []).length >
+                      0 ? (
+                        <div className="mt-3">
+                          <p className="text-xs text-gray-600 mb-2 font-medium">
+                            🎨 Design References:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {(designs[idx].designReferencePreviews || []).map(
+                              (url: string, i: number) => (
+                                <div key={i} className="relative group">
+                                  <img
+                                    src={url}
+                                    alt={`Design Reference ${i + 1}`}
+                                    className="w-16 h-16 object-cover border rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                                  />
+                                  {/* Remove button */}
+                                  <button
+                                    type="button"
+                                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold transition-colors"
+                                    onClick={() => {
+                                      setDesigns((prev) => {
+                                        const arr = [...prev];
+                                        arr[idx].designReference = arr[
+                                          idx
+                                        ].designReference.filter(
+                                          (item: any, j: number) => j !== i
+                                        );
+                                        arr[idx].designReferencePreviews = arr[
+                                          idx
+                                        ].designReferencePreviews.filter(
+                                          (item: any, j: number) => j !== i
+                                        );
+                                        return arr;
+                                      });
+                                    }}
+                                    aria-label="Remove design reference"
+                                  >
+                                    ×
+                                  </button>
+                                  {/* Image number badge */}
+                                  <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 text-white text-xs px-1 rounded">
+                                    {i + 1}
+                                  </div>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      ) : (
                         <div className="mt-3 p-2 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                        <p className="text-xs text-gray-500 text-center">
+                          <p className="text-xs text-gray-500 text-center">
                             🎨 No design references yet
                           </p>
                         </div>
@@ -446,31 +459,40 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                     {/* Cloth Images */}
                     <div>
                       <label className="block font-medium mb-1 text-sm text-gray-700">
-                        Cloth/Fabric Images (max 3)
+                        Cloth/Fabric Images (max 2)
                       </label>
                       <div className="relative">
                         <Input
                           type="file"
                           accept="image/*"
                           multiple
+                          capture="environment"
                           onChange={(e) => {
                             const files = Array.from(e.target.files || []);
+                            console.log(
+                              `[OrderDetailsForm] Cloth files selected:`,
+                              files
+                            );
                             setDesigns((prev) => {
                               const arr = [...prev];
-                              arr[idx].clothImages = files.slice(0, 3);
+                              arr[idx].clothImages = files.slice(0, 2);
                               arr[idx].clothImagePreviews = files
-                                .slice(0, 3)
+                                .slice(0, 2)
                                 .map((file) =>
                                   typeof file === "string"
                                     ? file
                                     : URL.createObjectURL(file)
                                 );
+                              console.log(
+                                `[OrderDetailsForm] Updated design ${idx} clothImages:`,
+                                arr[idx].clothImages
+                              );
                               return arr;
                             });
                             e.target.value = ""; // Clear input to allow re-uploading the same file
                           }}
                           className="w-full cursor-pointer"
-                          disabled={designs[idx].clothImages?.length >= 3}
+                          disabled={designs[idx].clothImages?.length >= 2}
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                           <span className="text-gray-400 text-sm">🧵</span>
@@ -481,9 +503,12 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                           Fabric samples & material photos
                         </p>
                         <span className="text-xs text-green-600 font-medium">
-                          ({designs[idx].clothImages?.length || 0}/3)
+                          ({designs[idx].clothImages?.length || 0}/2)
                         </span>
                       </div>
+                      <p className="text-xs text-green-600 mt-1">
+                        📱 Tap to open camera on mobile devices
+                      </p>
                       {/* Cloth Image Previews */}
                       {(designs[idx].clothImagePreviews || []).length > 0 ? (
                         <div className="mt-3">
@@ -536,9 +561,9 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
                         <div className="mt-3 p-2 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
                           <p className="text-xs text-gray-500 text-center">
                             🧵 No cloth images yet
-                        </p>
-                      </div>
-                    )}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="mt-3">

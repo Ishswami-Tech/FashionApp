@@ -1411,41 +1411,100 @@ const OrderConfirmationStep = () => {
                                     {d.designDescription}
                                   </p>
                                 )}
-                                <div className="flex flex-wrap gap-2">
-                                  {/* Design Reference Images */}
-                                  {d.designReferencePreviews &&
-                                    d.designReferencePreviews.map(
-                                      (img: string, imgIdx: number) => (
-                                        <div
-                                          key={imgIdx}
-                                          className="relative group"
-                                        >
+                                {/* Images Section */}
+                                <div className="space-y-3">
+                                  {/* Canvas Image */}
+                                  {d.canvasImage && (
+                                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                      <h5 className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
+                                        🎨 Canvas Design
+                                      </h5>
+                                      <div className="flex justify-center">
+                                        <div className="relative group">
                                           <img
-                                            src={img}
-                                            alt={`Design Ref ${imgIdx + 1}`}
-                                            className="w-16 h-16 object-cover rounded-lg cursor-pointer border transition-transform duration-200 group-hover:scale-105"
-                                            onClick={() => setModalImage(img)}
+                                            src={d.canvasImage}
+                                            alt="Canvas Drawing"
+                                            className="w-32 h-24 object-contain rounded-lg cursor-pointer border-2 border-red-500 transition-transform duration-200 group-hover:scale-105 shadow-md"
+                                            onClick={() =>
+                                              setModalImage(d.canvasImage)
+                                            }
                                           />
                                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
                                             <Search className="w-4 h-4 text-white" />
                                           </div>
                                         </div>
-                                      )
-                                    )}
-                                  {/* Canvas Image */}
-                                  {d.canvasImage && (
-                                    <div className="relative group">
-                                      <img
-                                        src={d.canvasImage}
-                                        alt="Canvas Drawing"
-                                        className="w-16 h-16 object-contain rounded-lg cursor-pointer border transition-transform duration-200 group-hover:scale-105"
-                                        onClick={() =>
-                                          setModalImage(d.canvasImage)
-                                        }
-                                      />
-                                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
-                                        <Search className="w-4 h-4 text-white" />
                                       </div>
+                                    </div>
+                                  )}
+
+                                  {/* Reference and Cloth Images */}
+                                  {(d.designReferencePreviews?.length > 0 ||
+                                    d.clothImagePreviews?.length > 0) && (
+                                    <div className="grid grid-cols-2 gap-3">
+                                      {/* Design Reference Images */}
+                                      {d.designReferencePreviews?.length >
+                                        0 && (
+                                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                          <h5 className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
+                                            🎨 Reference Images
+                                          </h5>
+                                          <div className="flex flex-wrap gap-2 justify-center">
+                                            {d.designReferencePreviews.map(
+                                              (img: string, imgIdx: number) => (
+                                                <div
+                                                  key={imgIdx}
+                                                  className="relative group"
+                                                >
+                                                  <img
+                                                    src={img}
+                                                    alt={`Design Ref ${
+                                                      imgIdx + 1
+                                                    }`}
+                                                    className="w-20 h-16 object-cover rounded-lg cursor-pointer border-2 border-blue-500 transition-transform duration-200 group-hover:scale-105 shadow-md"
+                                                    onClick={() =>
+                                                      setModalImage(img)
+                                                    }
+                                                  />
+                                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
+                                                    <Search className="w-3 h-3 text-white" />
+                                                  </div>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Cloth Images */}
+                                      {d.clothImagePreviews?.length > 0 && (
+                                        <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                          <h5 className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1">
+                                            🧵 Cloth/Fabric Images
+                                          </h5>
+                                          <div className="flex flex-wrap gap-2 justify-center">
+                                            {d.clothImagePreviews.map(
+                                              (img: string, imgIdx: number) => (
+                                                <div
+                                                  key={imgIdx}
+                                                  className="relative group"
+                                                >
+                                                  <img
+                                                    src={img}
+                                                    alt={`Cloth ${imgIdx + 1}`}
+                                                    className="w-20 h-16 object-cover rounded-lg cursor-pointer border-2 border-green-500 transition-transform duration-200 group-hover:scale-105 shadow-md"
+                                                    onClick={() =>
+                                                      setModalImage(img)
+                                                    }
+                                                  />
+                                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
+                                                    <Search className="w-3 h-3 text-white" />
+                                                  </div>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </div>

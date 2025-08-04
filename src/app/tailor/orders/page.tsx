@@ -2,6 +2,7 @@
 
 import { useEffect, useState, ChangeEvent } from "react";
 import { useQueryData } from "@/hooks/useQueryData";
+import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 
 // --- Types ---
 type FileData = {
@@ -18,7 +19,6 @@ type Design = {
   designReferenceFiles?: FileData[];
   clothImages?: (FileData | string)[];
   clothImageFiles?: FileData[];
-  // Add any other fields you use in the UI
 };
 
 type Measurement = {
@@ -38,8 +38,8 @@ type Garment = {
   };
   measurement?: Measurement;
   measurements?: Record<string, string | number>;
-  category?: string; // Added category to Garment type
-  designs?: Design[]; // <-- Added designs property
+  category?: string;
+  designs?: Design[];
 };
 
 type Order = {
@@ -104,76 +104,6 @@ const CalendarIcon = () => (
   </svg>
 );
 
-const UserIcon = () => (
-  <svg
-    className="w-4 h-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-    />
-  </svg>
-);
-
-const MailIcon = () => (
-  <svg
-    className="w-4 h-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-    />
-  </svg>
-);
-
-const PhoneIcon = () => (
-  <svg
-    className="w-4 h-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-    />
-  </svg>
-);
-
-const MapPinIcon = () => (
-  <svg
-    className="w-4 h-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-    />
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-    />
-  </svg>
-);
-
 const PackageIcon = () => (
   <svg
     className="w-4 h-4"
@@ -212,22 +142,6 @@ const EyeIcon = () => (
   </svg>
 );
 
-const FileTextIcon = () => (
-  <svg
-    className="w-4 h-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-    />
-  </svg>
-);
-
 const FilterIcon = () => (
   <svg
     className="w-4 h-4"
@@ -243,37 +157,6 @@ const FilterIcon = () => (
     />
   </svg>
 );
-
-function Modal({
-  open,
-  onClose,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
-  if (!open) return null;
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl shadow-2xl p-6 max-w-[95vw] max-h-[95vh] overflow-auto relative"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:shadow-xl transition-all"
-          onClick={onClose}
-        >
-          ×
-        </button>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 function LoadingSpinner() {
   return (
@@ -316,7 +199,11 @@ function OrderCard({
     (g) =>
       g.measurement?.canvasImageFile?.url ||
       (g.measurement?.designReferenceFiles &&
-        g.measurement.designReferenceFiles.length > 0)
+        g.measurement.designReferenceFiles.length > 0) ||
+      (g.designs &&
+        g.designs.some(
+          (d) => d.designReferenceFiles && d.designReferenceFiles.length > 0
+        ))
   );
 
   return (
@@ -328,7 +215,7 @@ function OrderCard({
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between w-full gap-4">
           <div className="flex items-start space-x-4 w-full min-w-0">
             <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">
                   {order.oid?.slice(-3)}
                 </span>
@@ -337,17 +224,13 @@ function OrderCard({
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
                 <h3 className="text-lg font-semibold text-gray-900 break-words">
-                  {order.fullName}
+                  Order #{order.oid}
                 </h3>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {order.oid}
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Tailor View
                 </span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm text-gray-500">
-                <div className="flex items-center space-x-1 min-w-0">
-                  <MailIcon />
-                  <span className="break-all truncate">{order.email}</span>
-                </div>
                 <div className="flex items-center space-x-1">
                   <CalendarIcon />
                   <span className="truncate">
@@ -360,6 +243,12 @@ function OrderCard({
                     {garmentCount} garment{garmentCount !== 1 ? "s" : ""}
                   </span>
                 </div>
+                <div className="flex items-center space-x-1">
+                  <CalendarIcon />
+                  <span className="truncate">
+                    Delivery: {formatDisplayDate(order.deliveryDate)}
+                  </span>
+                </div>
                 {hasImages && (
                   <div className="flex items-center space-x-1">
                     <EyeIcon />
@@ -369,34 +258,24 @@ function OrderCard({
               </div>
             </div>
           </div>
-          <div className="flex flex-row lg:flex-col items-end lg:items-end space-x-4 lg:space-x-0 lg:space-y-2 w-full lg:w-auto">
-            <div className="text-right w-full lg:w-auto">
-              <div className="text-lg font-bold text-gray-900 whitespace-nowrap">
-                ₹{order.totalAmount}
-              </div>
-              <div className="text-sm text-gray-500 whitespace-nowrap">
-                {order.payment}
-              </div>
-            </div>
-            <div
-              className={`transform transition-transform duration-200 ${
-                isExpanded ? "rotate-180" : ""
-              }`}
+          <div
+            className={`transform transition-transform duration-200 ${
+              isExpanded ? "rotate-180" : ""
+            }`}
+          >
+            <svg
+              className="w-5 h-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <svg
-                className="w-5 h-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
           </div>
         </div>
       </button>
@@ -405,111 +284,22 @@ function OrderCard({
         <div className="px-4 sm:px-6 pb-6 border-t border-gray-100 bg-gray-50/50">
           <div className="pt-6 space-y-6">
             {/* Order ID Header */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div className="flex-1">
-                  <h4 className="text-xl font-bold text-blue-900 mb-1">
+                  <h4 className="text-xl font-bold text-green-900 mb-1">
                     Order ID: {order.oid}
                   </h4>
-                  <p className="text-sm text-blue-700">
+                  <p className="text-sm text-green-700">
                     Created: {formatDisplayDate(order.createdAt)}
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
-                  {/* PDF Viewing Buttons */}
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() =>
-                        window.open(
-                          `/api/proxy-pdf?type=customer&oid=${order.oid}`,
-                          "_blank"
-                        )
-                      }
-                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                    >
-                      <FileTextIcon />
-                      <span className="ml-1">Print Invoice</span>
-                    </button>
-                    <button
-                      onClick={() =>
-                        window.open(
-                          `/api/proxy-pdf?type=tailor&oid=${order.oid}`,
-                          "_blank"
-                        )
-                      }
-                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-700 bg-green-100 border border-green-300 rounded-md hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
-                    >
-                      <FileTextIcon />
-                      <span className="ml-1">Print Tailor</span>
-                    </button>
-                  </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-blue-900">
-                      ₹{order.totalAmount}
-                    </div>
-                    <div className="text-sm text-blue-700">{order.payment}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Customer Information */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-                  Customer Details
-                </h4>
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-3">
-                    <UserIcon />
-                    <span className="text-sm text-gray-600 break-words flex-1 min-w-0">
-                      {order.fullName}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <MailIcon />
-                    <span className="text-sm text-gray-600 break-all flex-1 min-w-0">
-                      {order.email}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <PhoneIcon />
-                    <span className="text-sm text-gray-600 flex-1 min-w-0">
-                      {order.contactNumber}
-                    </span>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <MapPinIcon />
-                    <span className="text-sm text-gray-600 break-words flex-1 min-w-0">
-                      {order.fullAddress}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-                  Delivery & Payment
-                </h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">
-                      Delivery Date:
-                    </span>
-                    <span className="text-sm font-medium">
+                    <div className="text-sm text-green-700">Delivery Date</div>
+                    <div className="text-lg font-bold text-green-900">
                       {formatDisplayDate(order.deliveryDate)}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Budget:</span>
-                    <span className="text-sm font-medium text-green-600">
-                      ₹{order.totalAmount}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Payment:</span>
-                    <span className="text-sm font-medium">{order.payment}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -542,8 +332,8 @@ function OrderCard({
                   >
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
                       <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-blue-600 font-semibold text-sm">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-green-600 font-semibold text-sm">
                             {gidx + 1}
                           </span>
                         </div>
@@ -581,79 +371,12 @@ function OrderCard({
                       </div>
                     )}
 
-                    {/* Images Gallery - Only show if no designs exist */}
-                    {(!g.designs || g.designs.length === 0) && (
-                      <div className="space-y-6">
-                        {/* Canvas Image */}
-                        {getImageSrc(g.measurement?.canvasImageFile) && (
-                          <div className="bg-gray-50 rounded-lg p-4">
-                            <h6 className="text-sm font-medium text-gray-700 mb-3">
-                              Canvas Drawing
-                            </h6>
-                            <div className="flex justify-center items-center">
-                              <img
-                                src={getImageSrc(
-                                  g.measurement?.canvasImageFile
-                                )}
-                                alt="Canvas Drawing"
-                                className="rounded-lg border border-gray-200 shadow-md cursor-pointer hover:scale-105 transition-transform duration-200"
-                                style={{
-                                  width: "100%",
-                                  maxWidth: "350px",
-                                  height: "auto",
-                                  aspectRatio: "4/3",
-                                  objectFit: "contain",
-                                  background: "#fff",
-                                  display: "block",
-                                }}
-                                onClick={() =>
-                                  onImageClick(
-                                    getImageSrc(g.measurement?.canvasImageFile),
-                                    "Canvas Drawing"
-                                  )
-                                }
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Design Reference Images */}
-                        {Array.isArray(g.measurement?.designReferenceFiles) &&
-                          g.measurement.designReferenceFiles.length > 0 && (
-                            <div className="bg-gray-50 rounded-lg p-4">
-                              <h6 className="text-sm font-medium text-gray-700 mb-3">
-                                Design References
-                              </h6>
-                              <div className="flex flex-nowrap overflow-x-auto pb-2">
-                                {g.measurement.designReferenceFiles.map(
-                                  (file, i) =>
-                                    getImageSrc(file) && (
-                                      <img
-                                        key={`measurement-${i}`}
-                                        src={getImageSrc(file)}
-                                        alt={`Design Reference ${i + 1}`}
-                                        className="w-20 h-20 object-cover border rounded cursor-pointer flex-shrink-0 mr-2"
-                                        onClick={() =>
-                                          onImageClick(
-                                            getImageSrc(file),
-                                            `Design Reference ${i + 1}`
-                                          )
-                                        }
-                                      />
-                                    )
-                                )}
-                              </div>
-                            </div>
-                          )}
-                      </div>
-                    )}
-
                     {/* Measurements */}
                     {(g.measurements &&
                       Object.keys(g.measurements).length > 0) ||
                     (g.measurement?.measurements &&
                       Object.keys(g.measurement.measurements).length > 0) ? (
-                      <div className="mt-4">
+                      <div className="mb-4">
                         <h6 className="text-sm font-medium text-gray-700 mb-2">
                           Measurements
                         </h6>
@@ -676,11 +399,12 @@ function OrderCard({
                         </div>
                       </div>
                     ) : null}
+
                     {/* Designs Section */}
                     {g.designs &&
                       Array.isArray(g.designs) &&
                       g.designs.length > 0 && (
-                        <div className="mt-4">
+                        <div className="space-y-4">
                           <h6 className="text-sm font-medium text-purple-700 mb-2">
                             Designs
                           </h6>
@@ -694,15 +418,13 @@ function OrderCard({
                                   <span className="font-semibold text-purple-900">
                                     {design.name || `Design ${dIdx + 1}`}
                                   </span>
-                                  <span className="text-green-700 font-bold">
-                                    ₹{design.amount}
-                                  </span>
                                 </div>
                                 {design.designDescription && (
                                   <div className="mb-2 text-gray-700 text-sm">
                                     {design.designDescription}
                                   </div>
                                 )}
+
                                 {/* All Images - Responsive Layout */}
                                 <div className="mt-3">
                                   <div className="text-xs text-gray-500 mb-2">
@@ -869,6 +591,68 @@ function OrderCard({
                           </div>
                         </div>
                       )}
+
+                    {/* Canvas Image from measurement (if no designs) */}
+                    {(!g.designs || g.designs.length === 0) &&
+                      getImageSrc(g.measurement?.canvasImageFile) && (
+                        <div className="mt-4">
+                          <h6 className="text-sm font-medium text-gray-700 mb-2">
+                            Canvas Drawing
+                          </h6>
+                          <div className="flex justify-center items-center">
+                            <img
+                              src={getImageSrc(g.measurement?.canvasImageFile)}
+                              alt="Canvas Drawing"
+                              className="rounded-lg border border-gray-200 shadow-md cursor-pointer hover:scale-105 transition-transform duration-200"
+                              style={{
+                                width: "100%",
+                                maxWidth: "350px",
+                                height: "auto",
+                                aspectRatio: "4/3",
+                                objectFit: "contain",
+                                background: "#fff",
+                                display: "block",
+                              }}
+                              onClick={() =>
+                                onImageClick(
+                                  getImageSrc(g.measurement?.canvasImageFile),
+                                  "Canvas Drawing"
+                                )
+                              }
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                    {/* Design Reference Images from measurement (if no designs) */}
+                    {(!g.designs || g.designs.length === 0) &&
+                      Array.isArray(g.measurement?.designReferenceFiles) &&
+                      g.measurement.designReferenceFiles.length > 0 && (
+                        <div className="mt-4">
+                          <h6 className="text-sm font-medium text-gray-700 mb-3">
+                            Design References
+                          </h6>
+                          <div className="flex flex-nowrap overflow-x-auto pb-2">
+                            {g.measurement.designReferenceFiles.map(
+                              (file, i) =>
+                                getImageSrc(file) && (
+                                  <img
+                                    key={`measurement-${i}`}
+                                    src={getImageSrc(file)}
+                                    alt={`Design Reference ${i + 1}`}
+                                    className="w-20 h-20 object-cover border rounded cursor-pointer flex-shrink-0 mr-2"
+                                    onClick={() =>
+                                      onImageClick(
+                                        getImageSrc(file),
+                                        `Design Reference ${i + 1}`
+                                      )
+                                    }
+                                  />
+                                )
+                            )}
+                          </div>
+                        </div>
+                      )}
                   </div>
                 ))}
               </div>
@@ -931,7 +715,7 @@ function Pagination({
           onClick={() => onPageChange(page)}
           className={`px-3 py-2 text-sm font-medium rounded-md ${
             currentPage === page
-              ? "text-white bg-blue-600 border border-blue-600"
+              ? "text-white bg-green-600 border border-green-600"
               : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
           }`}
         >
@@ -965,43 +749,41 @@ function Pagination({
 }
 
 function formatDisplayDate(dateStr?: string) {
-  if (!dateStr) return "No date";
+  if (!dateStr) return "No date set";
 
-  // Try to parse the date
-  let d: Date;
-
-  // Handle different date formats
+  // Handle DD/MM/YYYY format
   if (dateStr.includes("/")) {
-    // Handle DD/MM/YYYY format
     const parts = dateStr.split("/");
     if (parts.length === 3) {
-      d = new Date(
+      const d = new Date(
         parseInt(parts[2]),
         parseInt(parts[1]) - 1,
         parseInt(parts[0])
       );
-    } else {
-      d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString("en-IN", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+      }
     }
-  } else {
-    d = new Date(dateStr);
   }
 
-  // If date is still invalid, return error message
+  // Try standard date parsing
+  const d = new Date(dateStr);
   if (isNaN(d.getTime())) {
-    console.warn(`[Admin Dashboard] Invalid date: ${dateStr}`);
     return "Invalid date";
   }
 
   return d.toLocaleDateString("en-IN", {
     year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
   });
 }
 
-export default function AdminOrdersPage() {
-  // Remove useState for orders, loading, error
+export default function TailorOrdersPage() {
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -1013,35 +795,21 @@ export default function AdminOrdersPage() {
 
   // Use useQueryData for fetching orders
   const { data, isPending, isFetched, isFetching, refetch } = useQueryData(
-    ["admin-orders"],
+    ["tailor-orders"],
     () => fetch("/api/admin/orders").then((res) => res.json())
   );
   const orders = data?.orders || [];
   const loading = isPending;
   const error = data?.error;
 
-  useEffect(() => {
-    // Sort by creation date (most recent first) and limit to recent orders
-    const sortedOrders = (orders || [])
-      .sort((a: Order, b: Order) => {
-        const dateA = new Date(a.createdAt || 0);
-        const dateB = new Date(b.createdAt || 0);
-        return dateB.getTime() - dateA.getTime();
-      })
-      .slice(0, 50); // Show only last 50 orders
-    // setOrders(sortedOrders); // This state is removed
-    // setLoading(false); // This state is removed
-    // setError(null); // This state is removed
-  }, [orders]); // Dependency array updated
-
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
-    setCurrentPage(1); // Reset to first page when searching
+    setCurrentPage(1);
   };
 
   const handleDateFilter = (e: ChangeEvent<HTMLInputElement>) => {
     setDateFilter(e.target.value);
-    setCurrentPage(1); // Reset to first page when filtering
+    setCurrentPage(1);
   };
 
   const handleImageClick = (src: string, alt: string) => {
@@ -1050,7 +818,7 @@ export default function AdminOrdersPage() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    setExpanded(null); // Close expanded cards when changing pages
+    setExpanded(null);
   };
 
   const filteredOrders = orders.filter((order: Order) => {
@@ -1062,9 +830,6 @@ export default function AdminOrdersPage() {
     if (!q) return true;
 
     return (
-      (order.fullName && order.fullName.toLowerCase().includes(q)) ||
-      (order.email && order.email.toLowerCase().includes(q)) ||
-      (order.contactNumber && order.contactNumber.includes(q)) ||
       (order.oid && order.oid.toLowerCase().includes(q)) ||
       (order.garments &&
         order.garments.some(
@@ -1100,10 +865,10 @@ export default function AdminOrdersPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
             <div className="w-full">
               <h1 className="text-3xl font-bold text-gray-900 break-words">
-                Order Management
+                Tailor Orders
               </h1>
               <p className="text-gray-600 mt-1 break-words">
-                Manage and track all customer orders (Recent 50 orders)
+                View and manage work orders (Recent 50 orders)
               </p>
             </div>
             <div className="flex items-center space-x-3 w-full sm:w-auto">
@@ -1126,8 +891,8 @@ export default function AdminOrdersPage() {
                 type="text"
                 value={search}
                 onChange={handleSearch}
-                placeholder="Search orders by name, email, phone, or order ID..."
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm"
+                placeholder="Search orders by order ID or garment type..."
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
               />
             </div>
             <div className="relative w-full sm:w-auto">
@@ -1138,7 +903,7 @@ export default function AdminOrdersPage() {
                 type="date"
                 value={dateFilter}
                 onChange={handleDateFilter}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
                 placeholder="Filter by date"
                 aria-label="Filter orders by date"
               />
@@ -1189,20 +954,25 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Image Modal */}
-      <Modal open={!!modalImg} onClose={() => setModalImg(null)}>
-        {modalImg && (
-          <div className="text-center">
-            <img
-              src={modalImg.src}
-              alt={modalImg.alt}
-              className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[80vh] rounded-lg shadow-lg object-contain mx-auto"
-            />
-            <p className="mt-4 text-sm text-gray-600 break-words">
-              {modalImg.alt}
-            </p>
-          </div>
-        )}
-      </Modal>
+      <Dialog open={!!modalImg} onOpenChange={() => setModalImg(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-auto">
+          <DialogClose className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:shadow-xl transition-all">
+            ×
+          </DialogClose>
+          {modalImg && (
+            <div className="text-center">
+              <img
+                src={modalImg.src}
+                alt={modalImg.alt}
+                className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[80vh] rounded-lg shadow-lg object-contain mx-auto"
+              />
+              <p className="mt-4 text-sm text-gray-600 break-words">
+                {modalImg.alt}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

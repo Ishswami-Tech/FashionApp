@@ -18,6 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { orderDetailsSchema, measurementSchema } from "@/types/orderSchemas";
 import measurementData from "@/app/measurement2.js";
 import { toast } from "sonner";
+import { analyzeOrderComplexity, logOrderDebugInfo, createFormDataDebugInfo } from "@/lib/orderDebugUtils";
 
 const OrderFormContext = createContext<any>(null);
 
@@ -162,7 +163,7 @@ export const OrderFormProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [garmentType, selectedVariant]);
 
-  // --- Order Submission Mutation ---
+  // --- Order Submission Mutation with Enhanced Error Handling ---
   const { mutate: submitOrder, isPending: isSubmitting } = useMutation({
     mutationKey: ["submit-order"],
     mutationFn: async (formData: FormData) => {
@@ -170,24 +171,48 @@ export const OrderFormProvider: React.FC<{ children: React.ReactNode }> = ({
       const entries = Array.from(formData.entries());
       console.log("[OrderFormContext] FormData entries count:", entries.length);
 
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        body: formData,
-      });
+      // Enhanced fetch with timeout and better error handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes
+      
+      try {
+        const res = await fetch("/api/orders", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
+        console.log("[OrderFormContext] Response status:", res.status);
+        console.log("[OrderFormContext] Response headers:", Object.fromEntries(res.headers.entries()));
+        
+        // Check if response is actually JSON
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const textResponse = await res.text();
+          console.error("[OrderFormContext] Non-JSON response received:", textResponse);
+          throw new Error("Server returned invalid response format. Please try again or contact support.");
+        }
+        
+        const data = await res.json();
+        console.log("[OrderFormContext] Response data:", data);
 
-      console.log("[OrderFormContext] Response status:", res.status);
-      const data = await res.json();
-      console.log("[OrderFormContext] Response data:", data);
+        if (!res.ok) {
+          console.error("[OrderFormContext] Response not ok:", res.status, data);
+          throw new Error(data.error || `Server error: ${res.status}`);
+        }
 
-      if (!res.ok) {
-        console.error("[OrderFormContext] Response not ok:", res.status, data);
-        throw new Error(data.error || "Order submission failed");
+        console.log(
+          "[OrderFormContext] Order submission successful, returning data"
+        );
+        return data;
+      } catch (fetchError: unknown) {
+        clearTimeout(timeoutId);
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          throw new Error('Request timed out. Large orders may take time to process. Please try again or contact support.');
+        }
+        throw fetchError;
       }
-
-      console.log(
-        "[OrderFormContext] Order submission successful, returning data"
-      );
-      return data;
     },
     onSuccess: (data: any) => {
       console.log(
@@ -267,7 +292,19 @@ export const OrderFormProvider: React.FC<{ children: React.ReactNode }> = ({
     },
     onError: (error: any) => {
       console.error("[OrderFormContext] submitOrder error:", error);
-      setSubmitError(error.message || "Order submission failed");
+      
+      let errorMessage = error.message || "Order submission failed";
+      
+      // Provide specific guidance based on error type
+      if (errorMessage.includes('timeout')) {
+        errorMessage = "Order submission timed out. For large orders with many designs, this can happen. Please try reducing the number of garments or contact support for assistance.";
+      } else if (errorMessage.includes('network')) {
+        errorMessage = "Network error occurred. Please check your internet connection and try again.";
+      } else if (errorMessage.includes('invalid response format')) {
+        errorMessage = "Server error occurred. Please try again in a few minutes or contact support.";
+      }
+      
+      setSubmitError(errorMessage);
       setSubmitLoading(false);
       setProgressStates({
         orderData: "error",
@@ -281,10 +318,63 @@ export const OrderFormProvider: React.FC<{ children: React.ReactNode }> = ({
   // PDF generation moved to on-demand approach for better reliability
   // No background generation needed - PDFs are generated when requested
 
+  // --- Enhanced Payload Validation Helper ---
+  const validateOrderPayload = (customerData: any, garments: any[], deliveryData: any) => {
+    // Use the comprehensive analysis utility
+    const debugInfo = analyzeOrderComplexity(garments);
+    logOrderDebugInfo(debugInfo);
+    
+    const errors = [];
+    
+    // Basic validation
+    if (garments.length === 0) {
+      errors.push("Please add at least one garment to your order.");
+    }
+    
+    // Add errors from debug analysis
+    errors.push(...debugInfo.validationErrors);
+    
+    // Show warnings as toast notifications
+    if (debugInfo.validationWarnings.length > 0) {
+      debugInfo.validationWarnings.forEach(warning => {
+        toast.warning(warning, { duration: 5000 });
+      });
+    }
+    
+    // Show estimated processing time for large orders
+    if (debugInfo.estimatedProcessingTime > 120) {
+      toast.info(`Large order detected. Estimated processing time: ${Math.round(debugInfo.estimatedProcessingTime / 60)} minutes`, {
+        duration: 8000
+      });
+    }
+    
+    return { 
+      errors, 
+      totalDesigns: debugInfo.totalDesigns, 
+      totalFiles: debugInfo.totalFiles,
+      debugInfo 
+    };
+  };
+
   // --- Handler for Delivery & Payment Step ---
   const handleDeliverySubmit = async (deliveryData: any) => {
     setSubmitLoading(true);
     setSubmitError(null);
+    
+    // Validate payload before submission
+    const validation = validateOrderPayload(customerData, garments, deliveryData);
+    
+    if (validation.errors.length > 0) {
+      setSubmitError(validation.errors.join(' '));
+      setSubmitLoading(false);
+      return;
+    }
+    
+    // Show warning for large orders
+    if (validation.totalDesigns > 30) {
+      console.log(`[OrderFormContext] Large order detected: ${validation.totalDesigns} designs, ${validation.totalFiles} files`);
+    }
+    
     // Reset progress states
     setProgressStates({
       orderData: "processing",
@@ -478,20 +568,8 @@ export const OrderFormProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       });
 
-      // Log FormData contents for debugging
-      console.log("[OrderFormContext] FormData entries:");
-      let fileCount = 0;
-      for (let [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          fileCount++;
-          console.log(
-            `[OrderFormContext] ${key}: File (${value.name}, ${value.size} bytes)`
-          );
-        } else {
-          console.log(`[OrderFormContext] ${key}:`, value);
-        }
-      }
-      console.log(`[OrderFormContext] Total files in FormData: ${fileCount}`);
+      // Enhanced FormData debugging
+      createFormDataDebugInfo(formData);
 
       // Call submitOrder - success will be handled by the onSuccess callback
       submitOrder(formData);
